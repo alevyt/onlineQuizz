@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz Admin</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+      button { padding: 8px 12px; }
+      table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+      th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
+      th { background: #f4f4f4; }
+      .section { margin-top: 20px; }
+      .muted { color: #555; font-size: 14px; }
+      input[type="text"] { padding: 6px; width: 220px; }
+    </style>
+  </head>
+  <body>
+    <h1>Admin</h1>
+
+    <div class="row">
+      <form id="uploadForm">
+        <input type="file" id="quizFile" name="quizFile" accept=".xls" required />
+        <button type="submit">Upload .xls</button>
+      </form>
+      <button id="startBtn">Start Quiz</button>
+      <button id="prevBtn">Prev Question</button>
+      <button id="nextBtn">Next Question</button>
+      <button id="finishBtn">Finish Quiz</button>
+    </div>
+
+    <div id="status" class="muted"></div>
+
+    <div class="section">
+      <h3>Questions</h3>
+      <table id="questionsTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Type</th>
+            <th>Question</th>
+            <th>Options</th>
+            <th>Correct Answers</th>
+            <th>Media URL</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>Teams</h3>
+      <table id="teamsTable">
+        <thead>
+          <tr><th>Name</th><th>Score</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>Submissions (Edit Answers)</h3>
+      <table id="submissionsTable">
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th>Q#</th>
+            <th>Answers (; separated)</th>
+            <th>Correct</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/admin.js"></script>
+  </body>
+  </html>

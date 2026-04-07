@@ -1,0 +1,30 @@
+{
+  "questions": [],
+  "currentQuestionIndex": -1,
+  "quizStarted": false,
+  "quizFinished": false,
+  "teams": {
+    "team_1775548806838_464ff9": {
+      "id": "team_1775548806838_464ff9",
+      "name": "testteam",
+      "joinedAt": 1775548806838
+    },
+    "team_1775550151004_1a12cb": {
+      "id": "team_1775550151004_1a12cb",
+      "name": "Team2",
+      "joinedAt": 1775550151004
+    }
+  },
+  "answers": {
+    "team_1775548806838_464ff9": {
+      "score": 0
+    },
+    "team_1775550151004_1a12cb": {
+      "score": 0
+    }
+  },
+  "submissions": {
+    "team_1775548806838_464ff9": {},
+    "team_1775550151004_1a12cb": {}
+  }
+}
