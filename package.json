@@ -4,11 +4,15 @@
   "description": "Lightweight real-time quiz web app",
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "tunnel": "ngrok http 3000",
+    "start:public": "concurrently \"npm run start\" \"npm run tunnel\""
   },
   "dependencies": {
+    "concurrently": "^9.2.1",
     "express": "^4.21.2",
     "multer": "^2.0.2",
+    "ngrok": "^5.0.0-beta.2",
     "socket.io": "^4.8.1",
     "xlsx": "^0.18.5"
   }
