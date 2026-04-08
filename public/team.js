@@ -12,7 +12,10 @@ const submitBtn = document.getElementById("submitBtn");
 const msgEl = document.getElementById("msg");
 const headerEl = document.getElementById("header");
 
-let teamId = localStorage.getItem("quiz_team_id") || "";
+var params = new URLSearchParams(window.location.search);
+var urlTeamId = params.get("teamId") || params.get("tid") || "";
+
+let teamId = urlTeamId || localStorage.getItem("quiz_team_id") || "";
 let teamName = localStorage.getItem("quiz_team_name") || "";
 let currentQuestionIndex = -1;
 let currentQuestion = null;
@@ -22,6 +25,10 @@ let quizFinished = false;
 
 if (teamName) {
   teamNameInput.value = teamName;
+}
+
+if (urlTeamId) {
+  localStorage.setItem("quiz_team_id", urlTeamId);
 }
 
 function setMessage(text) {

@@ -16,6 +16,7 @@ Server listens on `0.0.0.0:3000` and prints local network links.
 - `/admin`
 - `/team`
 - `/leaderboard`
+- `/qr` (QR code that links to the team page)
 
 ## Excel format
 
@@ -28,3 +29,9 @@ Upload `.xls` file on admin page with these columns:
 - `mediaURL`
 
 Semicolon (`;`) separated values are supported for multi-value fields.
+
+## QR Join
+
+Open `/qr` to display a QR code that points to the team page (`/team`).
+If you visit `/qr?teamId=<TEAM_ID>` (or `/qr?tid=<TEAM_ID>`), the Team page will
+auto-store that identity in `localStorage` and reconnect without re-registering.

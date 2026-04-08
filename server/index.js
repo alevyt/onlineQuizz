@@ -36,6 +36,10 @@ app.get("/leaderboard", function (req, res) {
   res.sendFile(path.join(__dirname, "..", "public", "leaderboard.html"));
 });
 
+app.get("/qr", function (req, res) {
+  res.sendFile(path.join(__dirname, "..", "public", "qr.html"));
+});
+
 app.get("/api/session/admin", function (req, res) {
   res.json({
     session: quiz.getSessionForAdmin(),
