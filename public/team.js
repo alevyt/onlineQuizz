@@ -22,6 +22,7 @@ let currentQuestion = null;
 let score = 0;
 let quizStarted = false;
 let quizFinished = false;
+let approved = false;
 
 if (teamName) {
   teamNameInput.value = teamName;
@@ -70,7 +71,10 @@ function renderQuestion(question) {
 function renderHeader() {
   headerEl.textContent = `Team: ${teamName || "-"} | Score: ${score} | Question: ${
     currentQuestionIndex >= 0 ? currentQuestionIndex + 1 : "-"
-  } | Started: ${quizStarted ? "yes" : "no"} | Finished: ${quizFinished ? "yes" : "no"}`;
+  } | Started: ${quizStarted ? "yes" : "no"} | Finished: ${quizFinished ? "yes" : "no"} | Approved: ${
+    approved ? "yes" : "pending"
+  }`;
+  submitBtn.disabled = !approved;
 }
 
 function showQuiz() {
@@ -81,6 +85,7 @@ function showQuiz() {
 function applySession(session) {
   if (!session) return;
   score = session.score || 0;
+  approved = Boolean(session.approved);
   quizStarted = Boolean(session.quizStarted);
   quizFinished = Boolean(session.quizFinished);
   currentQuestionIndex = Number(session.currentQuestionIndex ?? -1);
@@ -124,7 +129,11 @@ socket.on("team:registered", (payload) => {
   localStorage.setItem("quiz_team_name", teamName);
   showQuiz();
   applySession(payload.session);
-  setMessage("Connected.");
+  if (payload.approved) {
+    setMessage("Connected.");
+  } else {
+    setMessage("Connected. Waiting for admin approval.");
+  }
 });
 
 socket.on("team:session", (session) => {
@@ -160,6 +169,12 @@ socket.on("quiz:finish", () => {
 
 socket.on("team:error", ({ message }) => {
   setMessage(message || "Unknown error");
+});
+
+socket.on("team:approved", () => {
+  approved = true;
+  renderHeader();
+  setMessage("Approved by admin. You can submit answers now.");
 });
 
 if (teamId && teamName) {

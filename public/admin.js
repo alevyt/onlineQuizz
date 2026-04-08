@@ -3,6 +3,7 @@ const socket = io("/admin");
 let session = null;
 let leaderboard = [];
 let submissions = [];
+let teams = [];
 
 const uploadForm = document.getElementById("uploadForm");
 const quizFile = document.getElementById("quizFile");
@@ -40,10 +41,23 @@ function renderQuestions() {
 
 function renderTeams() {
   teamsBody.innerHTML = "";
+  const scoreMap = {};
   leaderboard.forEach((item) => {
+    scoreMap[item.id] = item.score;
+  });
+  teams.forEach((team) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${item.name}</td><td>${item.score}</td>`;
+    const approved = Boolean(team.approved);
+    const score = scoreMap[team.id] || 0;
+    tr.innerHTML = `<td>${team.name}</td><td>${approved ? "approved" : "pending"}</td><td>${score}</td><td>${
+      approved ? "-" : `<button data-approve="${team.id}">Approve</button>`
+    }</td>`;
     teamsBody.appendChild(tr);
+  });
+  teamsBody.querySelectorAll("button[data-approve]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      socket.emit("team:approve", { teamId: btn.getAttribute("data-approve") });
+    });
   });
 }
 
@@ -52,12 +66,22 @@ function renderSubmissions() {
   submissions.forEach((row) => {
     const tr = document.createElement("tr");
     const inputId = `a_${row.teamId}_${row.questionIndex}`;
+    const markId = `m_${row.teamId}_${row.questionIndex}`;
+    const selectedAuto = row.manualIsCorrect === null ? "selected" : "";
+    const selectedTrue = row.manualIsCorrect === true ? "selected" : "";
+    const selectedFalse = row.manualIsCorrect === false ? "selected" : "";
     tr.innerHTML = `
       <td>${row.teamName}</td>
       <td>${row.questionIndex + 1}</td>
       <td><input id="${inputId}" type="text" value="${(row.answers || []).join("; ")}" /></td>
-      <td>${row.isCorrect ? "yes" : "no"}</td>
-      <td><button data-team="${row.teamId}" data-q="${row.questionIndex}" data-input="${inputId}">Save</button></td>
+      <td>
+        <select id="${markId}">
+          <option value="auto" ${selectedAuto}>Auto (${row.isCorrect ? "correct" : "incorrect"})</option>
+          <option value="true" ${selectedTrue}>Correct</option>
+          <option value="false" ${selectedFalse}>Incorrect</option>
+        </select>
+      </td>
+      <td><button data-team="${row.teamId}" data-q="${row.questionIndex}" data-input="${inputId}" data-mark="${markId}">Save</button></td>
     `;
     submissionsBody.appendChild(tr);
   });
@@ -67,10 +91,14 @@ function renderSubmissions() {
       const teamId = btn.getAttribute("data-team");
       const q = Number(btn.getAttribute("data-q"));
       const input = document.getElementById(btn.getAttribute("data-input"));
+      const markSelect = document.getElementById(btn.getAttribute("data-mark"));
+      const markValue = markSelect ? markSelect.value : "auto";
+      const isCorrect = markValue === "auto" ? null : markValue === "true";
       socket.emit("answer:edit", {
         teamId,
         questionIndex: q,
-        answers: input.value
+        answers: input.value,
+        isCorrect
       });
     });
   });
@@ -120,10 +148,14 @@ socket.on("session:restored", (payload) => {
   session = payload.session;
   leaderboard = payload.leaderboard || [];
   submissions = payload.submissions || [];
+  teams = Object.values(payload.session.teams || {});
   renderAll();
 });
 
-socket.on("teams:update", () => {});
+socket.on("teams:update", (rows) => {
+  teams = rows || [];
+  renderTeams();
+});
 socket.on("submissions:update", (rows) => {
   submissions = rows || [];
   renderSubmissions();
@@ -135,5 +167,6 @@ fetch("/api/session/admin")
     session = data.session;
     leaderboard = data.leaderboard || [];
     submissions = data.submissions || [];
+    teams = Object.values(data.session.teams || {});
     renderAll();
   });

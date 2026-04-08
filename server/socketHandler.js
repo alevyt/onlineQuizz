@@ -60,15 +60,30 @@ function attachSocketHandlers(io) {
       broadcastState(io);
     });
 
-    socket.on("answer:edit", ({ teamId, questionIndex, answers }) => {
+    socket.on("answer:edit", ({ teamId, questionIndex, answers, isCorrect }) => {
       const result = quiz.editTeamAnswer({
         teamId,
         questionIndex: Number(questionIndex),
-        answers
+        answers,
+        isCorrect: isCorrect === null || typeof isCorrect === "boolean" ? isCorrect : undefined
       });
       if (result.error) return;
-      adminNs.emit("answer:edit", { teamId, questionIndex: Number(questionIndex), answers });
+      adminNs.emit("answer:edit", {
+        teamId,
+        questionIndex: Number(questionIndex),
+        answers,
+        isCorrect: typeof isCorrect === "boolean" ? isCorrect : null
+      });
       teamNs.emit("score:update");
+      broadcastState(io);
+    });
+
+    socket.on("team:approve", ({ teamId }) => {
+      const result = quiz.approveTeam(teamId);
+      if (result.error) return;
+      teamNs.to(teamId).emit("team:approved");
+      teamNs.to(teamId).emit("team:session", quiz.getSessionForTeam(teamId));
+      adminNs.emit("team:approved", { teamId });
       broadcastState(io);
     });
   });
@@ -86,6 +101,7 @@ function attachSocketHandlers(io) {
       socket.emit("team:registered", {
         team: result.team,
         teamId: finalTeamId,
+        approved: Boolean(result.approved),
         session: quiz.getSessionForTeam(finalTeamId)
       });
       adminNs.emit("team:join", result.team);

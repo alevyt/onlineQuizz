@@ -83,9 +83,11 @@ function getSessionForAdmin() {
 
 function getSessionForTeam(teamId) {
   const team = state.teams[teamId] || null;
+  const approved = Boolean(team && team.approved);
   return {
     team,
     teamId,
+    approved,
     score: state.answers[teamId]?.score || 0,
     quizStarted: state.quizStarted,
     quizFinished: state.quizFinished,
@@ -140,9 +142,12 @@ function registerOrReconnectTeam({ teamId, teamName }) {
   }
 
   if (!state.teams[id]) {
-    state.teams[id] = { id, name, joinedAt: Date.now() };
+    state.teams[id] = { id, name, joinedAt: Date.now(), approved: false };
   } else {
     state.teams[id].name = name;
+    if (typeof state.teams[id].approved !== "boolean") {
+      state.teams[id].approved = false;
+    }
   }
 
   if (!state.answers[id]) {
@@ -153,7 +158,15 @@ function registerOrReconnectTeam({ teamId, teamName }) {
   }
 
   saveState();
-  return { team: state.teams[id] };
+  return { team: state.teams[id], approved: Boolean(state.teams[id].approved) };
+}
+
+function approveTeam(teamId) {
+  const team = state.teams[teamId];
+  if (!team) return { error: "Team not found." };
+  team.approved = true;
+  saveState();
+  return { ok: true, team };
 }
 
 function normalizeAnswers(input) {
@@ -181,6 +194,7 @@ function compareAnswers(question, submittedAnswers) {
 function submitAnswer({ teamId, questionIndex, answers }) {
   const team = state.teams[teamId];
   if (!team) return { error: "Team not found." };
+  if (!team.approved) return { error: "Waiting for admin approval." };
   if (questionIndex !== state.currentQuestionIndex) return { error: "Question index mismatch." };
   const question = state.questions[questionIndex];
   if (!question) return { error: "Question not found." };
@@ -191,7 +205,8 @@ function submitAnswer({ teamId, questionIndex, answers }) {
   state.submissions[teamId][questionIndex] = {
     answers: normalized,
     updatedAt: Date.now(),
-    isCorrect: compareAnswers(question, normalized)
+    isCorrect: compareAnswers(question, normalized),
+    manualIsCorrect: null
   };
 
   recalculateScores();
@@ -199,17 +214,26 @@ function submitAnswer({ teamId, questionIndex, answers }) {
   return { ok: true };
 }
 
-function editTeamAnswer({ teamId, questionIndex, answers }) {
+function editTeamAnswer({ teamId, questionIndex, answers, isCorrect }) {
   const question = state.questions[questionIndex];
   if (!question) return { error: "Question not found." };
   if (!state.teams[teamId]) return { error: "Team not found." };
   if (!state.submissions[teamId]) state.submissions[teamId] = {};
 
   const normalized = normalizeAnswers(answers);
+  const autoIsCorrect = compareAnswers(question, normalized);
+  let manualIsCorrect = state.submissions[teamId][questionIndex]?.manualIsCorrect ?? null;
+  if (isCorrect === null) {
+    manualIsCorrect = null;
+  } else if (typeof isCorrect === "boolean") {
+    manualIsCorrect = isCorrect;
+  }
+
   state.submissions[teamId][questionIndex] = {
     answers: normalized,
     updatedAt: Date.now(),
-    isCorrect: compareAnswers(question, normalized),
+    isCorrect: manualIsCorrect === null ? autoIsCorrect : manualIsCorrect,
+    manualIsCorrect,
     editedByAdmin: true
   };
 
@@ -232,6 +256,7 @@ function recalculateScores() {
 
 function getLeaderboard() {
   return Object.values(state.teams)
+    .filter((team) => Boolean(team.approved))
     .map((team) => ({
       id: team.id,
       name: team.name,
@@ -252,6 +277,7 @@ function getSubmissionsView() {
         questionIndex: Number(qIdx),
         answers: submission.answers || [],
         isCorrect: Boolean(submission.isCorrect),
+        manualIsCorrect: typeof submission.manualIsCorrect === "boolean" ? submission.manualIsCorrect : null,
         updatedAt: submission.updatedAt || 0,
         editedByAdmin: Boolean(submission.editedByAdmin)
       });
@@ -274,6 +300,7 @@ module.exports = {
   finishQuiz,
   setCurrentQuestionIndex,
   registerOrReconnectTeam,
+  approveTeam,
   submitAnswer,
   editTeamAnswer,
   getLeaderboard,
