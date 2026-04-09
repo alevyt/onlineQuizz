@@ -79,9 +79,9 @@
       "mediaURL": "https://www.w3schools.com/html/horse.mp3"
     }
   ],
-  "currentQuestionIndex": 2,
-  "quizStarted": true,
-  "quizFinished": false,
+  "currentQuestionIndex": 5,
+  "quizStarted": false,
+  "quizFinished": true,
   "teams": {
     "team_1775548806838_464ff9": {
       "id": "team_1775548806838_464ff9",
@@ -91,12 +91,13 @@
     "team_1775550151004_1a12cb": {
       "id": "team_1775550151004_1a12cb",
       "name": "Team2",
-      "joinedAt": 1775550151004
+      "joinedAt": 1775550151004,
+      "approved": true
     }
   },
   "answers": {
     "team_1775550151004_1a12cb": {
-      "score": 2
+      "score": 4
     },
     "team_1775548806838_464ff9": {
       "score": 0
@@ -108,22 +109,49 @@
         "answers": [
           "Mars"
         ],
-        "updatedAt": 1775638890678,
-        "isCorrect": true
+        "updatedAt": 1775717053474,
+        "isCorrect": true,
+        "manualIsCorrect": null
       },
       "1": {
         "answers": [
           "Paris"
         ],
-        "updatedAt": 1775638911385,
-        "isCorrect": true
+        "updatedAt": 1775717073463,
+        "isCorrect": true,
+        "manualIsCorrect": null
       },
       "2": {
         "answers": [
-          "1"
+          "True"
         ],
-        "updatedAt": 1775638928189,
-        "isCorrect": false
+        "updatedAt": 1775717130251,
+        "isCorrect": true,
+        "manualIsCorrect": null
+      },
+      "3": {
+        "answers": [
+          "Eiffel Tower"
+        ],
+        "updatedAt": 1775717164508,
+        "isCorrect": true,
+        "manualIsCorrect": null
+      },
+      "4": {
+        "answers": [
+          "Violin"
+        ],
+        "updatedAt": 1775717259498,
+        "isCorrect": false,
+        "manualIsCorrect": null
+      },
+      "5": {
+        "answers": [
+          "Horse"
+        ],
+        "updatedAt": 1775717313872,
+        "isCorrect": false,
+        "manualIsCorrect": null
       }
     }
   }

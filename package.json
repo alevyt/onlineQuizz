@@ -12,6 +12,7 @@
     "concurrently": "^9.2.1",
     "express": "^4.21.2",
     "multer": "^2.0.2",
+    "csv-parse": "^5.5.5",
     "ngrok": "^5.0.0-beta.2",
     "socket.io": "^4.8.1",
     "xlsx": "^0.18.5"

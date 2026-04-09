@@ -9,6 +9,7 @@ var socketIo = require("socket.io");
 var attachSocketHandlers = require("./socketHandler");
 var quiz = require("./quizController");
 var parseExcelFile = require("../utils/parseExcel").parseExcelFile;
+var parseCsvFile = require("../utils/parseCsv").parseCsvFile;
 
 var app = express();
 var server = http.createServer(app);
@@ -56,11 +57,13 @@ app.post("/api/upload", upload.single("quizFile"), function (req, res) {
   if (!req.file) {
     return res.status(400).json({ error: "quizFile is required." });
   }
-  if (!req.file.originalname.toLowerCase().endsWith(".xls")) {
-    return res.status(400).json({ error: "Only .xls files are supported." });
+  var originalName = (req.file.originalname || "").toLowerCase();
+  var ext = path.extname(originalName);
+  if (ext !== ".xls" && ext !== ".xlsx" && ext !== ".csv") {
+    return res.status(400).json({ error: "Only .xls, .xlsx, and .csv files are supported." });
   }
 
-  var parsed = parseExcelFile(req.file.path);
+  var parsed = ext === ".csv" ? parseCsvFile(req.file.path) : parseExcelFile(req.file.path);
   var errors = parsed.errors;
   var questions = parsed.questions;
   if (errors.length) {

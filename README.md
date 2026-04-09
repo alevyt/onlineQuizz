@@ -18,9 +18,9 @@ Server listens on `0.0.0.0:3000` and prints local network links.
 - `/leaderboard`
 - `/qr` (QR code that links to the team page)
 
-## Excel format
+## Excel / CSV format
 
-Upload `.xls` file on admin page with these columns:
+Upload a `.xls` / `.xlsx` / `.csv` file on the admin page with these columns:
 
 - `type`
 - `questionText`
@@ -29,6 +29,8 @@ Upload `.xls` file on admin page with these columns:
 - `mediaURL`
 
 Semicolon (`;`) separated values are supported for multi-value fields.
+
+For CSV, the first row must be the header with the column names exactly as above.
 
 ## QR Join
 
