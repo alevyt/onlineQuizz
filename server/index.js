@@ -59,11 +59,9 @@ app.post("/api/upload", upload.single("quizFile"), function (req, res) {
   }
   var originalName = (req.file.originalname || "").toLowerCase();
   var ext = path.extname(originalName);
-  if (ext !== ".xls" && ext !== ".xlsx" && ext !== ".csv") {
-    return res.status(400).json({ error: "Only .xls, .xlsx, and .csv files are supported." });
-  }
+  var isCsv = ext === ".csv" || originalName.indexOf(".csv") !== -1;
 
-  var parsed = ext === ".csv" ? parseCsvFile(req.file.path) : parseExcelFile(req.file.path);
+  var parsed = isCsv ? parseCsvFile(req.file.path) : parseExcelFile(req.file.path);
   var errors = parsed.errors;
   var questions = parsed.questions;
   if (errors.length) {
