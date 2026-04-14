@@ -23,6 +23,7 @@ let score = 0;
 let quizStarted = false;
 let quizFinished = false;
 let approved = false;
+let selectedOptions = [];
 
 if (teamName) {
   teamNameInput.value = teamName;
@@ -50,21 +51,50 @@ function renderMedia(question) {
 
 function renderQuestion(question) {
   currentQuestion = question;
+  selectedOptions = [];
+  answerInput.value = "";
   if (!question) {
     questionTitle.textContent = quizFinished ? "Quiz finished." : "Waiting for next question...";
     optionsEl.innerHTML = "";
     mediaEl.innerHTML = "";
+    answerInput.style.display = "block";
     return;
   }
   questionTitle.textContent = `${question.type}: ${question.questionText}`;
   renderMedia(question);
 
   if (question.type === "multiple-choice" || question.type === "true-false") {
-    optionsEl.innerHTML = (question.options || [])
-      .map((opt, idx) => `<div>${idx + 1}. ${opt}</div>`)
-      .join("");
+    answerInput.style.display = "none";
+    optionsEl.innerHTML = "";
+    (question.options || []).forEach((opt) => {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "option-btn";
+      btn.textContent = opt;
+      btn.addEventListener("click", function () {
+        if (question.type === "true-false") {
+          selectedOptions = [opt];
+        } else {
+          var idx = selectedOptions.indexOf(opt);
+          if (idx >= 0) {
+            selectedOptions.splice(idx, 1);
+          } else {
+            selectedOptions.push(opt);
+          }
+        }
+        optionsEl.querySelectorAll(".option-btn").forEach(function (b) {
+          if (selectedOptions.indexOf(b.textContent) >= 0) {
+            b.classList.add("selected");
+          } else {
+            b.classList.remove("selected");
+          }
+        });
+      });
+      optionsEl.appendChild(btn);
+    });
   } else {
     optionsEl.innerHTML = "";
+    answerInput.style.display = "block";
   }
 }
 
@@ -108,10 +138,18 @@ joinBtn.addEventListener("click", () => {
 
 submitBtn.addEventListener("click", () => {
   if (!teamId || currentQuestionIndex < 0) return;
+  var outgoingAnswers = answerInput.value;
+  if (currentQuestion && (currentQuestion.type === "multiple-choice" || currentQuestion.type === "true-false")) {
+    outgoingAnswers = selectedOptions;
+    if (!selectedOptions.length) {
+      setMessage("Please choose at least one option.");
+      return;
+    }
+  }
   socket.emit("answer:submit", {
     teamId,
     questionIndex: currentQuestionIndex,
-    answers: answerInput.value
+    answers: outgoingAnswers
   });
   setMessage("Answer submitted.");
 });
