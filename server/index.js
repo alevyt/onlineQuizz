@@ -5,6 +5,7 @@ var os = require("os");
 var fs = require("fs");
 var multer = require("multer");
 var socketIo = require("socket.io");
+var QRCode = require("qrcode");
 
 var attachSocketHandlers = require("./socketHandler");
 var quiz = require("./quizController");
@@ -51,10 +52,6 @@ app.get("/qr", function (req, res) {
   res.sendFile(path.join(__dirname, "..", "public", "qr.html"));
 });
 
-app.get("/vendor/qrcode.min.js", function (req, res) {
-  res.sendFile(path.join(__dirname, "..", "node_modules", "qrcode", "build", "qrcode.min.js"));
-});
-
 app.get("/results", function (req, res) {
   res.sendFile(path.join(__dirname, "..", "public", "results.html"));
 });
@@ -88,6 +85,19 @@ app.get("/api/results/:teamId", function (req, res) {
     score: session.score || 0,
     placement: placement,
     leaderboard: leaderboard
+  });
+});
+
+app.get("/api/qr", function (req, res) {
+  var text = String(req.query.text || "").trim();
+  if (!text) {
+    return res.status(400).json({ error: "text query param is required." });
+  }
+  QRCode.toDataURL(text, { width: 256, margin: 1 }, function (err, dataUrl) {
+    if (err) {
+      return res.status(500).json({ error: "Failed to generate QR code." });
+    }
+    return res.json({ dataUrl: dataUrl });
   });
 });
 

@@ -1,5 +1,5 @@
 (function () {
-  var canvas = document.getElementById("qrCanvas");
+  var qrImage = document.getElementById("qrImage");
   var linkEl = document.getElementById("linkEl");
 
   var params = new URLSearchParams(window.location.search);
@@ -10,19 +10,23 @@
     teamLink += "?teamId=" + encodeURIComponent(tid);
   }
 
-  if (!canvas) return;
+  if (!qrImage) return;
   if (linkEl) linkEl.textContent = teamLink;
+  fetch("/api/qr?text=" + encodeURIComponent(teamLink))
+    .then(function (r) {
+      return r.json();
+    })
+    .then(function (data) {
+      if (!data || !data.dataUrl) throw new Error("Missing QR payload");
+      qrImage.src = data.dataUrl;
+    })
+    .catch(function () {
+      qrImage.style.display = "none";
+      if (linkEl) linkEl.textContent = "Failed to generate QR. Link: " + teamLink;
+    });
 
-  if (!window.QRCode || !window.QRCode.toCanvas) {
-    canvas.style.display = "none";
-    if (linkEl) linkEl.textContent = "QR lib missing. Link: " + teamLink;
-    return;
-  }
-
-  window.QRCode.toCanvas(canvas, teamLink, { width: 256, margin: 1 }, function (err) {
-    if (err && linkEl) {
-      linkEl.textContent = "Failed to generate QR. Link: " + teamLink;
-    }
+  qrImage.addEventListener("click", function () {
+    qrImage.classList.toggle("qr-fullscreen");
   });
 })();
 
