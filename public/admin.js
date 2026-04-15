@@ -16,6 +16,7 @@ const startBtn = document.getElementById("startBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const finishBtn = document.getElementById("finishBtn");
+const clearBtn = document.getElementById("clearBtn");
 
 function setStatus(text) {
   statusEl.textContent = text;
@@ -142,6 +143,12 @@ nextBtn.addEventListener("click", () => {
   if (!session) return;
   const max = (session.questions || []).length - 1;
   socket.emit("question:set", { index: Math.min(max, session.currentQuestionIndex + 1) });
+});
+clearBtn.addEventListener("click", () => {
+  const ok = window.confirm("Clear all quiz data (questions, teams, answers, scores)?");
+  if (!ok) return;
+  socket.emit("quiz:clear");
+  setStatus("Quiz cleared.");
 });
 
 socket.on("session:restored", (payload) => {

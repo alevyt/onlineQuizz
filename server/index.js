@@ -21,6 +21,24 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+function clearUploadsDir() {
+  if (!fs.existsSync(uploadsDir)) return;
+  var files = fs.readdirSync(uploadsDir);
+  files.forEach(function (name) {
+    var filePath = path.join(uploadsDir, name);
+    try {
+      var stat = fs.statSync(filePath);
+      if (stat.isFile()) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (error) {
+      // Ignore cleanup errors to avoid startup failures.
+    }
+  });
+}
+
+clearUploadsDir();
+
 var upload = multer({ dest: uploadsDir });
 
 app.use(express.json());
@@ -110,6 +128,11 @@ app.post("/api/upload", upload.single("quizFile"), function (req, res) {
   var isCsv = ext === ".csv" || originalName.indexOf(".csv") !== -1;
 
   var parsed = isCsv ? parseCsvFile(req.file.path) : parseExcelFile(req.file.path);
+  try {
+    fs.unlinkSync(req.file.path);
+  } catch (error) {
+    // Ignore deletion errors for temp uploads.
+  }
   var errors = parsed.errors;
   var questions = parsed.questions;
   if (errors.length) {

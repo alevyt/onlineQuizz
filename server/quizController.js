@@ -107,6 +107,12 @@ function setQuestions(questions) {
   return getSessionForAdmin();
 }
 
+function clearQuiz() {
+  state = clone(defaultState);
+  saveState();
+  return getSessionForAdmin();
+}
+
 function startQuiz() {
   if (state.questions.length === 0) {
     return false;
@@ -296,6 +302,7 @@ module.exports = {
   getSessionForAdmin,
   getSessionForTeam,
   setQuestions,
+  clearQuiz,
   startQuiz,
   finishQuiz,
   setCurrentQuestionIndex,

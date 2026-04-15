@@ -49,6 +49,13 @@ function attachSocketHandlers(io) {
       broadcastState(io);
     });
 
+    socket.on("quiz:clear", () => {
+      quiz.clearQuiz();
+      adminNs.emit("quiz:clear");
+      teamNs.emit("quiz:clear");
+      broadcastState(io);
+    });
+
     socket.on("question:set", ({ index }) => {
       const ok = quiz.setCurrentQuestionIndex(Number(index));
       if (!ok) return;

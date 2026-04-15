@@ -92,30 +92,7 @@
   "currentQuestionIndex": 0,
   "quizStarted": false,
   "quizFinished": false,
-  "teams": {
-    "team_1775548806838_464ff9": {
-      "id": "team_1775548806838_464ff9",
-      "name": "testteam",
-      "joinedAt": 1776151998684,
-      "approved": false
-    },
-    "team_1775550151004_1a12cb": {
-      "id": "team_1775550151004_1a12cb",
-      "name": "Team2",
-      "joinedAt": 1776152159821,
-      "approved": false
-    }
-  },
-  "answers": {
-    "team_1775548806838_464ff9": {
-      "score": 0
-    },
-    "team_1775550151004_1a12cb": {
-      "score": 0
-    }
-  },
-  "submissions": {
-    "team_1775548806838_464ff9": {},
-    "team_1775550151004_1a12cb": {}
-  }
+  "teams": {},
+  "answers": {},
+  "submissions": {}
 }
