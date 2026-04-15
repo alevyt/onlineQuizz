@@ -9,17 +9,23 @@
       table { border-collapse: collapse; width: 100%; }
       th, td { border: 1px solid #ddd; padding: 8px; }
       th { background: #f4f4f4; }
+      .lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     </style>
   </head>
   <body>
-    <h1>Leaderboard</h1>
+    <div class="lang-row">
+      <label for="langSelect" data-i18n="common.language">Language</label>
+      <select id="langSelect"></select>
+    </div>
+    <h1 data-i18n="leaderboard.header">Leaderboard</h1>
     <table>
       <thead>
-        <tr><th>#</th><th>Team</th><th>Score</th></tr>
+        <tr><th data-i18n="leaderboard.rank">#</th><th data-i18n="leaderboard.team">Team</th><th data-i18n="leaderboard.score">Score</th></tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/i18n.js"></script>
     <script src="/leaderboard.js"></script>
   </body>
   </html>

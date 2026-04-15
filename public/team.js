@@ -26,6 +26,10 @@ let quizFinished = false;
 let approved = false;
 let selectedOptions = [];
 
+function t(key, params, fallback) {
+  return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
+}
+
 if (teamName) {
   teamNameInput.value = teamName;
 }
@@ -47,7 +51,7 @@ function renderMedia(question) {
   mediaEl.innerHTML = "";
   if (!question || !question.mediaURL) return;
   if (question.type === "image") {
-    mediaEl.innerHTML = `<img src="${question.mediaURL}" alt="question media" />`;
+    mediaEl.innerHTML = `<img src="${question.mediaURL}" alt="${t("team.mediaAlt")}" />`;
   } else if (question.type === "video") {
     mediaEl.innerHTML = `<video src="${question.mediaURL}" controls></video>`;
   } else if (question.type === "audio") {
@@ -60,13 +64,13 @@ function renderQuestion(question) {
   selectedOptions = [];
   answerInput.value = "";
   if (!question) {
-    questionTitle.textContent = quizFinished ? "Quiz finished." : "Waiting for next question...";
+    questionTitle.textContent = quizFinished ? t("team.quizFinished") : t("team.waitingNext");
     optionsEl.innerHTML = "";
     mediaEl.innerHTML = "";
     answerInput.style.display = "block";
     return;
   }
-  questionTitle.textContent = `${question.type}: ${question.questionText}`;
+  questionTitle.textContent = t("team.questionTypeLabel", { type: question.type, text: question.questionText });
   renderMedia(question);
 
   if (question.type === "multiple-choice" || question.type === "true-false") {
@@ -105,11 +109,14 @@ function renderQuestion(question) {
 }
 
 function renderHeader() {
-  headerEl.textContent = `Team: ${teamName || "-"} | Score: ${score} | Question: ${
-    currentQuestionIndex >= 0 ? currentQuestionIndex + 1 : "-"
-  } | Started: ${quizStarted ? "yes" : "no"} | Finished: ${quizFinished ? "yes" : "no"} | Approved: ${
-    approved ? "yes" : "pending"
-  }`;
+  headerEl.textContent = t("team.headerLine", {
+    team: teamName || t("team.notAvailable"),
+    score: score,
+    question: currentQuestionIndex >= 0 ? currentQuestionIndex + 1 : t("team.notAvailable"),
+    started: quizStarted ? t("common.yes") : t("common.no"),
+    finished: quizFinished ? t("common.yes") : t("common.no"),
+    approved: approved ? t("common.yes") : t("common.pending")
+  });
   const disableActions = !approved || currentQuestionIndex < 0 || quizFinished;
   submitBtn.disabled = disableActions;
   skipBtn.disabled = disableActions;
@@ -138,7 +145,7 @@ function applySession(session) {
 function registerTeam(forceTeamName) {
   const name = (forceTeamName || teamNameInput.value || "").trim();
   if (!name) {
-    setMessage("Team name is required.");
+    setMessage(t("team.teamNameRequired"));
     return;
   }
   socket.emit("team:register", { teamId, teamName: name });
@@ -154,7 +161,7 @@ submitBtn.addEventListener("click", () => {
   if (currentQuestion && (currentQuestion.type === "multiple-choice" || currentQuestion.type === "true-false")) {
     outgoingAnswers = selectedOptions;
     if (!selectedOptions.length) {
-      setMessage("Please choose at least one option.");
+      setMessage(t("team.chooseOption"));
       return;
     }
   }
@@ -163,7 +170,7 @@ submitBtn.addEventListener("click", () => {
     questionIndex: currentQuestionIndex,
     answers: outgoingAnswers
   });
-  setMessage("Answer submitted.");
+  setMessage(t("team.answerSubmitted"));
 });
 
 skipBtn.addEventListener("click", () => {
@@ -178,7 +185,7 @@ skipBtn.addEventListener("click", () => {
   optionsEl.querySelectorAll(".option-btn").forEach(function (b) {
     b.classList.remove("selected");
   });
-  setMessage("Question skipped.");
+  setMessage(t("team.questionSkipped"));
 });
 
 socket.on("connect", () => {
@@ -195,9 +202,9 @@ socket.on("team:registered", (payload) => {
   showQuiz();
   applySession(payload.session);
   if (payload.approved) {
-    setMessage("Connected.");
+    setMessage(t("team.connected"));
   } else {
-    setMessage("Connected. Waiting for admin approval.");
+    setMessage(t("team.waitingApproval"));
   }
 });
 
@@ -232,23 +239,34 @@ socket.on("quiz:finish", () => {
 });
 
 socket.on("team:error", ({ message }) => {
-  setMessage(message || "Unknown error");
+  setMessage(message || t("common.unknownError"));
 });
 
 socket.on("team:approved", () => {
   approved = true;
   renderHeader();
-  setMessage("Approved by admin. You can submit answers now.");
+  setMessage(t("team.approvedNotice"));
 });
 
-if (teamId && teamName) {
-  fetch(`/api/session/team/${encodeURIComponent(teamId)}`)
-    .then((r) => r.json())
-    .then((session) => {
-      if (session.team) {
-        showQuiz();
-      }
-      applySession(session);
-    })
-    .catch(() => {});
-}
+window.I18N.init().then(() => {
+  window.I18N.bindLanguageSelector("langSelect", () => {
+    window.I18N.applyToDocument(document);
+    document.title = t("team.title");
+    renderQuestion(currentQuestion);
+    renderHeader();
+  });
+  window.I18N.applyToDocument(document);
+  document.title = t("team.title");
+
+  if (teamId && teamName) {
+    fetch(`/api/session/team/${encodeURIComponent(teamId)}`)
+      .then((r) => r.json())
+      .then((session) => {
+        if (session.team) {
+          showQuiz();
+        }
+        applySession(session);
+      })
+      .catch(() => {});
+  }
+});

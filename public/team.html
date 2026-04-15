@@ -14,29 +14,35 @@
       #options { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
       .option-btn { border: 1px solid #bbb; background: #f7f7f7; cursor: pointer; }
       .option-btn.selected { background: #dceeff; border-color: #3b82f6; }
+      .lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     </style>
   </head>
   <body>
-    <h1>Team Page</h1>
+    <div class="lang-row">
+      <label for="langSelect" data-i18n="common.language">Language</label>
+      <select id="langSelect"></select>
+    </div>
+    <h1 data-i18n="team.header">Team Page</h1>
 
     <div id="registerCard" class="card">
-      <h3>Register Team</h3>
-      <input id="teamName" type="text" placeholder="Team name" />
-      <button id="joinBtn">Join</button>
+      <h3 data-i18n="team.registerHeader">Register Team</h3>
+      <input id="teamName" type="text" data-i18n-placeholder="team.teamNamePlaceholder" placeholder="Team name" />
+      <button id="joinBtn" data-i18n="team.join">Join</button>
     </div>
 
     <div id="quizCard" class="card" style="display:none;">
       <div id="header" class="muted"></div>
-      <h3 id="questionTitle">Waiting for quiz start...</h3>
+      <h3 id="questionTitle" data-i18n="team.waitingStart">Waiting for quiz start...</h3>
       <div id="media"></div>
       <div id="options"></div>
-      <textarea id="answerInput" placeholder="Type answer(s). Use ';' for multiple answers."></textarea>
-      <button id="submitBtn">Submit Answer</button>
-      <button id="skipBtn" type="button">Skip Question</button>
+      <textarea id="answerInput" data-i18n-placeholder="team.answerPlaceholder" placeholder="Type answer(s). Use ';' for multiple answers."></textarea>
+      <button id="submitBtn" data-i18n="team.submitAnswer">Submit Answer</button>
+      <button id="skipBtn" type="button" data-i18n="team.skipQuestion">Skip Question</button>
       <p id="msg" class="muted"></p>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/i18n.js"></script>
     <script src="/team.js"></script>
   </body>
   </html>

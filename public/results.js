@@ -4,12 +4,17 @@
   var teamPlacementEl = document.getElementById("teamPlacement");
   var statusEl = document.getElementById("status");
   var rowsEl = document.getElementById("rows");
+  var latestPayload = null;
 
   var params = new URLSearchParams(window.location.search);
   var teamId = params.get("teamId") || localStorage.getItem("quiz_team_id") || "";
 
   function setStatus(text) {
     if (statusEl) statusEl.textContent = text;
+  }
+
+  function t(key, params, fallback) {
+    return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
   }
 
   function renderLeaderboard(rows, currentTeamId) {
@@ -22,8 +27,22 @@
     });
   }
 
+  function renderFromPayload(data) {
+    if (!data) return;
+    latestPayload = data;
+    teamNameEl.textContent = data.team && data.team.name ? data.team.name : t("results.teamUnknown");
+    teamScoreEl.textContent = String(data.score || 0);
+    teamPlacementEl.textContent = data.placement ? String(data.placement) : "-";
+    renderLeaderboard(data.leaderboard || [], teamId);
+    if (!data.quizFinished) {
+      setStatus(t("results.quizRunning"));
+    } else {
+      setStatus(t("results.quizFinished"));
+    }
+  }
+
   if (!teamId) {
-    setStatus("Team identity not found. Open the Team page first.");
+    setStatus(t("results.teamIdentityMissing"));
     return;
   }
 
@@ -32,18 +51,27 @@
       return r.json();
     })
     .then(function (data) {
-      teamNameEl.textContent = data.team && data.team.name ? data.team.name : "Unknown";
-      teamScoreEl.textContent = String(data.score || 0);
-      teamPlacementEl.textContent = data.placement ? String(data.placement) : "-";
-      renderLeaderboard(data.leaderboard || [], teamId);
-      if (!data.quizFinished) {
-        setStatus("Quiz is still running. Results may update later.");
-      } else {
-        setStatus("Quiz finished.");
-      }
+      renderFromPayload(data);
     })
     .catch(function () {
-      setStatus("Failed to load results.");
+      setStatus(t("results.loadFailed"));
     });
+
+  window.I18N.init().then(function () {
+    window.I18N.bindLanguageSelector("langSelect", function () {
+      window.I18N.applyToDocument(document);
+      document.title = t("results.title");
+      if (latestPayload) {
+        renderFromPayload(latestPayload);
+      } else if (!teamId) {
+        setStatus(t("results.teamIdentityMissing"));
+      }
+    });
+    window.I18N.applyToDocument(document);
+    document.title = t("results.title");
+    if (!teamId) {
+      setStatus(t("results.teamIdentityMissing"));
+    }
+  });
 })();
 

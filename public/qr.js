@@ -11,7 +11,18 @@
   }
 
   if (!qrImage) return;
-  if (linkEl) linkEl.textContent = teamLink;
+  function t(key, params, fallback) {
+    return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
+  }
+
+  function renderTexts() {
+    if (window.I18N) window.I18N.applyToDocument(document);
+    document.title = t("qr.title");
+    qrImage.setAttribute("alt", t("qr.imageAlt"));
+    if (linkEl) linkEl.textContent = teamLink;
+  }
+
+  renderTexts();
   fetch("/api/qr?text=" + encodeURIComponent(teamLink))
     .then(function (r) {
       return r.json();
@@ -22,11 +33,18 @@
     })
     .catch(function () {
       qrImage.style.display = "none";
-      if (linkEl) linkEl.textContent = "Failed to generate QR. Link: " + teamLink;
+      if (linkEl) linkEl.textContent = t("qr.failed", { link: teamLink });
     });
 
   qrImage.addEventListener("click", function () {
     qrImage.classList.toggle("qr-fullscreen");
+  });
+
+  window.I18N.init().then(function () {
+    window.I18N.bindLanguageSelector("langSelect", function () {
+      renderTexts();
+    });
+    renderTexts();
   });
 })();
 

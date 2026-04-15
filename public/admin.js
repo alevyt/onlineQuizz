@@ -18,6 +18,10 @@ const nextBtn = document.getElementById("nextBtn");
 const finishBtn = document.getElementById("finishBtn");
 const clearBtn = document.getElementById("clearBtn");
 
+function t(key, params, fallback) {
+  return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
+}
+
 function setStatus(text) {
   statusEl.textContent = text;
 }
@@ -50,8 +54,8 @@ function renderTeams() {
     const tr = document.createElement("tr");
     const approved = Boolean(team.approved);
     const score = scoreMap[team.id] || 0;
-    tr.innerHTML = `<td>${team.name}</td><td>${approved ? "approved" : "pending"}</td><td>${score}</td><td>${
-      approved ? "-" : `<button data-approve="${team.id}">Approve</button>`
+    tr.innerHTML = `<td>${team.name}</td><td>${approved ? t("common.approved") : t("common.pending")}</td><td>${score}</td><td>${
+      approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`
     }</td>`;
     teamsBody.appendChild(tr);
   });
@@ -71,18 +75,21 @@ function renderSubmissions() {
     const selectedAuto = row.manualIsCorrect === null ? "selected" : "";
     const selectedTrue = row.manualIsCorrect === true ? "selected" : "";
     const selectedFalse = row.manualIsCorrect === false ? "selected" : "";
+    const autoLabel = t("admin.autoMark", {
+      result: row.isCorrect ? t("common.correct").toLowerCase() : t("common.incorrect").toLowerCase()
+    });
     tr.innerHTML = `
       <td>${row.teamName}</td>
       <td>${row.questionIndex + 1}</td>
       <td><input id="${inputId}" type="text" value="${(row.answers || []).join("; ")}" /></td>
       <td>
         <select id="${markId}">
-          <option value="auto" ${selectedAuto}>Auto (${row.isCorrect ? "correct" : "incorrect"})</option>
-          <option value="true" ${selectedTrue}>Correct</option>
-          <option value="false" ${selectedFalse}>Incorrect</option>
+          <option value="auto" ${selectedAuto}>${autoLabel}</option>
+          <option value="true" ${selectedTrue}>${t("common.correct")}</option>
+          <option value="false" ${selectedFalse}>${t("common.incorrect")}</option>
         </select>
       </td>
-      <td><button data-team="${row.teamId}" data-q="${row.questionIndex}" data-input="${inputId}" data-mark="${markId}">Save</button></td>
+      <td><button data-team="${row.teamId}" data-q="${row.questionIndex}" data-input="${inputId}" data-mark="${markId}">${t("common.save")}</button></td>
     `;
     submissionsBody.appendChild(tr);
   });
@@ -106,14 +113,18 @@ function renderSubmissions() {
 }
 
 function renderAll() {
+  if (window.I18N) window.I18N.applyToDocument(document);
+  document.title = t("admin.title");
   renderQuestions();
   renderTeams();
   renderSubmissions();
   if (session) {
     setStatus(
-      `Started: ${session.quizStarted ? "yes" : "no"} | Finished: ${session.quizFinished ? "yes" : "no"} | Current Question: ${
-        session.currentQuestionIndex >= 0 ? session.currentQuestionIndex + 1 : "-"
-      }`
+      t("admin.stateLine", {
+        started: session.quizStarted ? t("common.yes") : t("common.no"),
+        finished: session.quizFinished ? t("common.yes") : t("common.no"),
+        current: session.currentQuestionIndex >= 0 ? session.currentQuestionIndex + 1 : t("admin.noCurrentQuestion")
+      })
     );
   }
 }
@@ -127,10 +138,10 @@ uploadForm.addEventListener("submit", async (e) => {
   const res = await fetch("/api/upload", { method: "POST", body: formData });
   const data = await res.json();
   if (!res.ok) {
-    setStatus((data.errors || [data.error || "Upload failed"]).join(" | "));
+    setStatus((data.errors || [data.error || t("admin.uploadFailed")]).join(" | "));
     return;
   }
-  setStatus(`Upload complete. Questions: ${data.count}`);
+  setStatus(t("admin.uploadComplete", { count: data.count }));
 });
 
 startBtn.addEventListener("click", () => socket.emit("quiz:start"));
@@ -145,10 +156,10 @@ nextBtn.addEventListener("click", () => {
   socket.emit("question:set", { index: Math.min(max, session.currentQuestionIndex + 1) });
 });
 clearBtn.addEventListener("click", () => {
-  const ok = window.confirm("Clear all quiz data (questions, teams, answers, scores)?");
+  const ok = window.confirm(t("admin.clearConfirm"));
   if (!ok) return;
   socket.emit("quiz:clear");
-  setStatus("Quiz cleared.");
+  setStatus(t("admin.cleared"));
 });
 
 socket.on("session:restored", (payload) => {
@@ -168,12 +179,17 @@ socket.on("submissions:update", (rows) => {
   renderSubmissions();
 });
 
-fetch("/api/session/admin")
-  .then((r) => r.json())
-  .then((data) => {
-    session = data.session;
-    leaderboard = data.leaderboard || [];
-    submissions = data.submissions || [];
-    teams = Object.values(data.session.teams || {});
+window.I18N.init().then(() => {
+  window.I18N.bindLanguageSelector("langSelect", () => {
     renderAll();
   });
+  fetch("/api/session/admin")
+    .then((r) => r.json())
+    .then((data) => {
+      session = data.session;
+      leaderboard = data.leaderboard || [];
+      submissions = data.submissions || [];
+      teams = Object.values(data.session.teams || {});
+      renderAll();
+    });
+});

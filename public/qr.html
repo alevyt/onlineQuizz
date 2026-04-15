@@ -20,16 +20,22 @@
         cursor: zoom-out;
       }
       code { word-break: break-word; }
+      .lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     </style>
   </head>
   <body>
-    <h1>Join via QR</h1>
+    <div class="lang-row">
+      <label for="langSelect" data-i18n="common.language">Language</label>
+      <select id="langSelect"></select>
+    </div>
+    <h1 data-i18n="qr.header">Join via QR</h1>
     <div class="card">
-      <div>Scan this QR code to open the Team page:</div>
-      <img id="qrImage" alt="Team page QR code" />
-      <p>Link: <code id="linkEl"></code></p>
+      <div data-i18n="qr.prompt">Scan this QR code to open the Team page:</div>
+      <img id="qrImage" data-i18n-title="qr.imageAlt" alt="Team page QR code" />
+      <p><span data-i18n="qr.linkLabel">Link:</span> <code id="linkEl"></code></p>
     </div>
 
+    <script src="/i18n.js"></script>
     <script src="/qr.js"></script>
   </body>
 </html>
