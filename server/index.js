@@ -29,6 +29,16 @@ app.get("/admin", function (req, res) {
   res.sendFile(path.join(__dirname, "..", "public", "admin.html"));
 });
 
+app.use(function (req, res, next) {
+  if (req.path === "/admin" || req.path === "/team" || req.path === "/leaderboard" || req.path === "/qr" || req.path === "/results") {
+    return next();
+  }
+  if (req.path.indexOf("/api/") === 0) return next();
+  if (req.path.indexOf("/socket.io/") === 0) return next();
+  if (path.extname(req.path)) return next();
+  return res.redirect("/team");
+});
+
 app.get("/team", function (req, res) {
   res.sendFile(path.join(__dirname, "..", "public", "team.html"));
 });
@@ -41,6 +51,14 @@ app.get("/qr", function (req, res) {
   res.sendFile(path.join(__dirname, "..", "public", "qr.html"));
 });
 
+app.get("/vendor/qrcode.min.js", function (req, res) {
+  res.sendFile(path.join(__dirname, "..", "node_modules", "qrcode", "build", "qrcode.min.js"));
+});
+
+app.get("/results", function (req, res) {
+  res.sendFile(path.join(__dirname, "..", "public", "results.html"));
+});
+
 app.get("/api/session/admin", function (req, res) {
   res.json({
     session: quiz.getSessionForAdmin(),
@@ -51,6 +69,26 @@ app.get("/api/session/admin", function (req, res) {
 
 app.get("/api/session/team/:teamId", function (req, res) {
   res.json(quiz.getSessionForTeam(req.params.teamId));
+});
+
+app.get("/api/results/:teamId", function (req, res) {
+  var teamId = req.params.teamId;
+  var session = quiz.getSessionForTeam(teamId);
+  var leaderboard = quiz.getLeaderboard();
+  var placement = null;
+  for (var i = 0; i < leaderboard.length; i += 1) {
+    if (leaderboard[i].id === teamId) {
+      placement = i + 1;
+      break;
+    }
+  }
+  res.json({
+    quizFinished: Boolean(session.quizFinished),
+    team: session.team || null,
+    score: session.score || 0,
+    placement: placement,
+    leaderboard: leaderboard
+  });
 });
 
 app.post("/api/upload", upload.single("quizFile"), function (req, res) {

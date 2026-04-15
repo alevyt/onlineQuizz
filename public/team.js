@@ -37,6 +37,11 @@ function setMessage(text) {
   msgEl.textContent = text;
 }
 
+function redirectToResults() {
+  if (!teamId) return;
+  window.location.href = "/results?teamId=" + encodeURIComponent(teamId);
+}
+
 function renderMedia(question) {
   mediaEl.innerHTML = "";
   if (!question || !question.mediaURL) return;
@@ -118,6 +123,10 @@ function applySession(session) {
   approved = Boolean(session.approved);
   quizStarted = Boolean(session.quizStarted);
   quizFinished = Boolean(session.quizFinished);
+  if (quizFinished) {
+    redirectToResults();
+    return;
+  }
   currentQuestionIndex = Number(session.currentQuestionIndex ?? -1);
   renderQuestion(session.currentQuestion || null);
   renderHeader();
@@ -201,8 +210,7 @@ socket.on("quiz:start", () => {
 socket.on("quiz:finish", () => {
   quizFinished = true;
   quizStarted = false;
-  renderQuestion(null);
-  renderHeader();
+  redirectToResults();
 });
 
 socket.on("team:error", ({ message }) => {

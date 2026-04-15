@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz Results</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; max-width: 840px; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; }
+      th { background: #f5f5f5; }
+      .muted { color: #666; }
+      .highlight { background: #eef6ff; }
+    </style>
+  </head>
+  <body>
+    <h1>Final Results</h1>
+
+    <div class="card">
+      <div><strong>Team:</strong> <span id="teamName">-</span></div>
+      <div><strong>Score:</strong> <span id="teamScore">0</span></div>
+      <div><strong>Placement:</strong> <span id="teamPlacement">-</span></div>
+      <div id="status" class="muted"></div>
+    </div>
+
+    <div class="card">
+      <h3>Leaderboard</h3>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Team</th><th>Score</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <script src="/results.js"></script>
+  </body>
+</html>
+

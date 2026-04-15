@@ -1,0 +1,121 @@
+{
+  "questions": [
+    {
+      "id": "q_1",
+      "type": "multiple-choice",
+      "questionText": "Which planet is known as the Red Planet?",
+      "options": [
+        "Mars",
+        "Venus",
+        "Jupiter",
+        "Saturn"
+      ],
+      "correctAnswers": [
+        "Mars"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_2",
+      "type": "short-answer",
+      "questionText": "What is the capital city of France?",
+      "options": [],
+      "correctAnswers": [
+        "Paris"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_3",
+      "type": "true-false",
+      "questionText": "The Pacific Ocean is larger than the Atlantic Ocean.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_4",
+      "type": "image",
+      "questionText": "Identify the landmark shown in this image.",
+      "options": [],
+      "correctAnswers": [
+        "Eiffel Tower"
+      ],
+      "mediaURL": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg"
+    },
+    {
+      "id": "q_5",
+      "type": "video",
+      "questionText": "Name the instrument heard most prominently in this short clip.",
+      "options": [
+        "Piano",
+        "Violin",
+        "Guitar",
+        "Drums"
+      ],
+      "correctAnswers": [
+        "Guitar"
+      ],
+      "mediaURL": "https://www.w3schools.com/html/mov_bbb.mp4"
+    },
+    {
+      "id": "q_6",
+      "type": "audio",
+      "questionText": "Which animal sound is this?",
+      "options": [
+        "Dog",
+        "Cat",
+        "Bird",
+        "Cow"
+      ],
+      "correctAnswers": [
+        "Bird"
+      ],
+      "mediaURL": "https://www.w3schools.com/html/horse.mp3"
+    },
+    {
+      "id": "q_7",
+      "type": "short-answer",
+      "questionText": "What is the third planet in solar system",
+      "options": [],
+      "correctAnswers": [
+        "Earth"
+      ],
+      "mediaURL": ""
+    }
+  ],
+  "currentQuestionIndex": 0,
+  "quizStarted": false,
+  "quizFinished": false,
+  "teams": {
+    "team_1775548806838_464ff9": {
+      "id": "team_1775548806838_464ff9",
+      "name": "testteam",
+      "joinedAt": 1776151998684,
+      "approved": false
+    },
+    "team_1775550151004_1a12cb": {
+      "id": "team_1775550151004_1a12cb",
+      "name": "Team2",
+      "joinedAt": 1776152159821,
+      "approved": false
+    }
+  },
+  "answers": {
+    "team_1775548806838_464ff9": {
+      "score": 0
+    },
+    "team_1775550151004_1a12cb": {
+      "score": 0
+    }
+  },
+  "submissions": {
+    "team_1775548806838_464ff9": {},
+    "team_1775550151004_1a12cb": {}
+  }
+}

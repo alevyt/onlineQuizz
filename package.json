@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "concurrently": "^9.2.1",
+    "qrcode": "^1.5.4",
     "express": "^4.21.2",
     "multer": "^2.0.2",
     "csv-parse": "^5.5.5",
