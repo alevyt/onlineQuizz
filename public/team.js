@@ -9,6 +9,7 @@ const optionsEl = document.getElementById("options");
 const mediaEl = document.getElementById("media");
 const answerInput = document.getElementById("answerInput");
 const submitBtn = document.getElementById("submitBtn");
+const skipBtn = document.getElementById("skipBtn");
 const msgEl = document.getElementById("msg");
 const headerEl = document.getElementById("header");
 
@@ -109,7 +110,9 @@ function renderHeader() {
   } | Started: ${quizStarted ? "yes" : "no"} | Finished: ${quizFinished ? "yes" : "no"} | Approved: ${
     approved ? "yes" : "pending"
   }`;
-  submitBtn.disabled = !approved;
+  const disableActions = !approved || currentQuestionIndex < 0 || quizFinished;
+  submitBtn.disabled = disableActions;
+  skipBtn.disabled = disableActions;
 }
 
 function showQuiz() {
@@ -161,6 +164,21 @@ submitBtn.addEventListener("click", () => {
     answers: outgoingAnswers
   });
   setMessage("Answer submitted.");
+});
+
+skipBtn.addEventListener("click", () => {
+  if (!teamId || currentQuestionIndex < 0) return;
+  socket.emit("answer:submit", {
+    teamId,
+    questionIndex: currentQuestionIndex,
+    answers: []
+  });
+  selectedOptions = [];
+  answerInput.value = "";
+  optionsEl.querySelectorAll(".option-btn").forEach(function (b) {
+    b.classList.remove("selected");
+  });
+  setMessage("Question skipped.");
 });
 
 socket.on("connect", () => {
