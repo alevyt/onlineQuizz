@@ -84,10 +84,15 @@ function getSessionForAdmin() {
 function getSessionForTeam(teamId) {
   const team = state.teams[teamId] || null;
   const approved = Boolean(team && team.approved);
+  const hasSubmittedCurrentQuestion =
+    Boolean(state.submissions[teamId]) &&
+    state.currentQuestionIndex >= 0 &&
+    Boolean(state.submissions[teamId][state.currentQuestionIndex]);
   return {
     team,
     teamId,
     approved,
+    hasSubmittedCurrentQuestion,
     score: state.answers[teamId]?.score || 0,
     quizStarted: state.quizStarted,
     quizFinished: state.quizFinished,
@@ -109,6 +114,14 @@ function setQuestions(questions) {
 
 function clearQuiz() {
   state = clone(defaultState);
+  saveState();
+  return getSessionForAdmin();
+}
+
+function clearTeams() {
+  state.teams = {};
+  state.answers = {};
+  state.submissions = {};
   saveState();
   return getSessionForAdmin();
 }
@@ -207,6 +220,9 @@ function submitAnswer({ teamId, questionIndex, answers }) {
 
   const normalized = normalizeAnswers(answers);
   if (!state.submissions[teamId]) state.submissions[teamId] = {};
+  if (state.submissions[teamId][questionIndex]) {
+    return { error: "You have already submitted an answer for this question." };
+  }
 
   state.submissions[teamId][questionIndex] = {
     answers: normalized,
@@ -303,6 +319,7 @@ module.exports = {
   getSessionForTeam,
   setQuestions,
   clearQuiz,
+  clearTeams,
   startQuiz,
   finishQuiz,
   setCurrentQuestionIndex,

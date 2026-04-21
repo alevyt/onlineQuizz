@@ -25,6 +25,7 @@ let quizStarted = false;
 let quizFinished = false;
 let approved = false;
 let selectedOptions = [];
+let hasSubmittedCurrentQuestion = false;
 
 function t(key, params, fallback) {
   return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
@@ -63,6 +64,7 @@ function renderQuestion(question) {
   currentQuestion = question;
   selectedOptions = [];
   answerInput.value = "";
+  hasSubmittedCurrentQuestion = false;
   if (!question) {
     questionTitle.textContent = quizFinished ? t("team.quizFinished") : t("team.waitingNext");
     optionsEl.innerHTML = "";
@@ -111,13 +113,12 @@ function renderQuestion(question) {
 function renderHeader() {
   headerEl.textContent = t("team.headerLine", {
     team: teamName || t("team.notAvailable"),
-    score: score,
     question: currentQuestionIndex >= 0 ? currentQuestionIndex + 1 : t("team.notAvailable"),
     started: quizStarted ? t("common.yes") : t("common.no"),
     finished: quizFinished ? t("common.yes") : t("common.no"),
     approved: approved ? t("common.yes") : t("common.pending")
   });
-  const disableActions = !approved || currentQuestionIndex < 0 || quizFinished;
+  const disableActions = !approved || currentQuestionIndex < 0 || quizFinished || hasSubmittedCurrentQuestion;
   submitBtn.disabled = disableActions;
   skipBtn.disabled = disableActions;
 }
@@ -131,6 +132,7 @@ function applySession(session) {
   if (!session) return;
   score = session.score || 0;
   approved = Boolean(session.approved);
+  hasSubmittedCurrentQuestion = Boolean(session.hasSubmittedCurrentQuestion);
   quizStarted = Boolean(session.quizStarted);
   quizFinished = Boolean(session.quizFinished);
   if (quizFinished) {
@@ -222,6 +224,7 @@ socket.on("quiz:state", (data) => {
 
 socket.on("question:change", (data) => {
   currentQuestionIndex = Number(data.index);
+  hasSubmittedCurrentQuestion = false;
   renderQuestion(data.currentQuestion || null);
   renderHeader();
 });

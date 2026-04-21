@@ -17,6 +17,7 @@ const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const finishBtn = document.getElementById("finishBtn");
 const clearBtn = document.getElementById("clearBtn");
+const clearTeamsBtn = document.getElementById("clearTeamsBtn");
 
 function t(key, params, fallback) {
   return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
@@ -160,6 +161,12 @@ clearBtn.addEventListener("click", () => {
   if (!ok) return;
   socket.emit("quiz:clear");
   setStatus(t("admin.cleared"));
+});
+clearTeamsBtn.addEventListener("click", () => {
+  const ok = window.confirm(t("admin.clearTeamsConfirm"));
+  if (!ok) return;
+  socket.emit("teams:clear");
+  setStatus(t("admin.teamsCleared"));
 });
 
 socket.on("session:restored", (payload) => {

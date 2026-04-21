@@ -92,7 +92,29 @@
   "currentQuestionIndex": 0,
   "quizStarted": false,
   "quizFinished": false,
-  "teams": {},
-  "answers": {},
-  "submissions": {}
+  "teams": {
+    "team_1776750373214_b22ef6": {
+      "id": "team_1776750373214_b22ef6",
+      "name": "asd",
+      "joinedAt": 1776750373215,
+      "approved": true
+    }
+  },
+  "answers": {
+    "team_1776750373214_b22ef6": {
+      "score": 1
+    }
+  },
+  "submissions": {
+    "team_1776750373214_b22ef6": {
+      "0": {
+        "answers": [
+          "Mars"
+        ],
+        "updatedAt": 1776750410748,
+        "isCorrect": true,
+        "manualIsCorrect": null
+      }
+    }
+  }
 }
