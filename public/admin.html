@@ -14,6 +14,7 @@
       th { background: #f4f4f4; }
       .section { margin-top: 20px; }
       .muted { color: #555; font-size: 14px; }
+      .notice { color: #0b6b2f; font-weight: 600; margin-top: 6px; }
       input[type="text"] { padding: 6px; width: 220px; }
       .lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     </style>
@@ -38,6 +39,7 @@
     </div>
 
     <div id="status" class="muted"></div>
+    <div id="allSubmittedNotice" class="notice"></div>
 
     <div class="section">
       <h3 data-i18n="admin.questions">Questions</h3>
@@ -71,6 +73,11 @@
 
     <div class="section">
       <h3 data-i18n="admin.submissions">Submissions (Edit Answers)</h3>
+      <div class="row">
+        <button id="submissionsPrevBtn" type="button" data-i18n="admin.submissionsPrevQuestion">Prev Question</button>
+        <button id="submissionsNextBtn" type="button" data-i18n="admin.submissionsNextQuestion">Next Question</button>
+        <span id="submissionsPageLabel" class="muted"></span>
+      </div>
       <table id="submissionsTable">
         <thead>
           <tr>

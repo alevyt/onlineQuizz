@@ -188,6 +188,16 @@ function approveTeam(teamId) {
   return { ok: true, team };
 }
 
+function kickTeam(teamId) {
+  const team = state.teams[teamId];
+  if (!team) return { error: "Team not found." };
+  delete state.teams[teamId];
+  delete state.answers[teamId];
+  delete state.submissions[teamId];
+  saveState();
+  return { ok: true, team };
+}
+
 function normalizeAnswers(input) {
   if (Array.isArray(input)) {
     return input.map((v) => String(v).trim()).filter(Boolean);
@@ -241,6 +251,7 @@ function editTeamAnswer({ teamId, questionIndex, answers, isCorrect }) {
   if (!question) return { error: "Question not found." };
   if (!state.teams[teamId]) return { error: "Team not found." };
   if (!state.submissions[teamId]) state.submissions[teamId] = {};
+  const existing = state.submissions[teamId][questionIndex] || null;
 
   const normalized = normalizeAnswers(answers);
   const autoIsCorrect = compareAnswers(question, normalized);
@@ -253,7 +264,8 @@ function editTeamAnswer({ teamId, questionIndex, answers, isCorrect }) {
 
   state.submissions[teamId][questionIndex] = {
     answers: normalized,
-    updatedAt: Date.now(),
+    // Keep original order stable in admin table after manual edits.
+    updatedAt: existing && existing.updatedAt ? existing.updatedAt : Date.now(),
     isCorrect: manualIsCorrect === null ? autoIsCorrect : manualIsCorrect,
     manualIsCorrect,
     editedByAdmin: true
@@ -305,7 +317,7 @@ function getSubmissionsView() {
       });
     });
   });
-  rows.sort((a, b) => b.updatedAt - a.updatedAt);
+  rows.sort((a, b) => a.updatedAt - b.updatedAt);
   return rows;
 }
 
@@ -325,6 +337,7 @@ module.exports = {
   setCurrentQuestionIndex,
   registerOrReconnectTeam,
   approveTeam,
+  kickTeam,
   submitAnswer,
   editTeamAnswer,
   getLeaderboard,

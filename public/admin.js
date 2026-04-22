@@ -4,13 +4,18 @@ let session = null;
 let leaderboard = [];
 let submissions = [];
 let teams = [];
+let submissionsQuestionPageIndex = 0;
 
 const uploadForm = document.getElementById("uploadForm");
 const quizFile = document.getElementById("quizFile");
 const statusEl = document.getElementById("status");
+const allSubmittedNoticeEl = document.getElementById("allSubmittedNotice");
 const questionsBody = document.querySelector("#questionsTable tbody");
 const teamsBody = document.querySelector("#teamsTable tbody");
 const submissionsBody = document.querySelector("#submissionsTable tbody");
+const submissionsPrevBtn = document.getElementById("submissionsPrevBtn");
+const submissionsNextBtn = document.getElementById("submissionsNextBtn");
+const submissionsPageLabel = document.getElementById("submissionsPageLabel");
 
 const startBtn = document.getElementById("startBtn");
 const prevBtn = document.getElementById("prevBtn");
@@ -25,6 +30,27 @@ function t(key, params, fallback) {
 
 function setStatus(text) {
   statusEl.textContent = text;
+}
+
+function updateAllSubmittedNotice() {
+  if (!session || session.currentQuestionIndex < 0 || session.quizFinished) {
+    allSubmittedNoticeEl.textContent = "";
+    return;
+  }
+  const approvedTeams = teams.filter((team) => Boolean(team && team.approved));
+  if (!approvedTeams.length) {
+    allSubmittedNoticeEl.textContent = "";
+    return;
+  }
+  const submittedByTeam = new Set(
+    submissions.filter((row) => row.questionIndex === session.currentQuestionIndex).map((row) => row.teamId)
+  );
+  const allSubmitted = approvedTeams.every((team) => submittedByTeam.has(team.id));
+  if (!allSubmitted) {
+    allSubmittedNoticeEl.textContent = "";
+    return;
+  }
+  allSubmittedNoticeEl.textContent = t("admin.allTeamsSubmitted", { current: session.currentQuestionIndex + 1 });
 }
 
 function renderQuestions() {
@@ -56,7 +82,7 @@ function renderTeams() {
     const approved = Boolean(team.approved);
     const score = scoreMap[team.id] || 0;
     tr.innerHTML = `<td>${team.name}</td><td>${approved ? t("common.approved") : t("common.pending")}</td><td>${score}</td><td>${
-      approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`
+      `${approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`} <button data-kick="${team.id}">${t("admin.kick")}</button>`
     }</td>`;
     teamsBody.appendChild(tr);
   });
@@ -65,11 +91,35 @@ function renderTeams() {
       socket.emit("team:approve", { teamId: btn.getAttribute("data-approve") });
     });
   });
+  teamsBody.querySelectorAll("button[data-kick]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const teamId = btn.getAttribute("data-kick");
+      const ok = window.confirm(t("admin.kickConfirm"));
+      if (!ok) return;
+      socket.emit("team:kick", { teamId });
+      setStatus(t("admin.teamKicked"));
+    });
+  });
 }
 
 function renderSubmissions() {
+  const questionsCount = (session && session.questions ? session.questions.length : 0);
+  const maxIndex = Math.max(questionsCount - 1, 0);
+  if (submissionsQuestionPageIndex < 0) submissionsQuestionPageIndex = 0;
+  if (submissionsQuestionPageIndex > maxIndex) submissionsQuestionPageIndex = maxIndex;
+  submissionsPageLabel.textContent = questionsCount
+    ? t("admin.submissionsPageLabel", {
+        current: submissionsQuestionPageIndex + 1,
+        total: questionsCount
+      })
+    : t("admin.noCurrentQuestion");
+  submissionsPrevBtn.disabled = !questionsCount || submissionsQuestionPageIndex <= 0;
+  submissionsNextBtn.disabled = !questionsCount || submissionsQuestionPageIndex >= maxIndex;
+
   submissionsBody.innerHTML = "";
-  submissions.forEach((row) => {
+  submissions
+    .filter((row) => row.questionIndex === submissionsQuestionPageIndex)
+    .forEach((row) => {
     const tr = document.createElement("tr");
     const inputId = `a_${row.teamId}_${row.questionIndex}`;
     const markId = `m_${row.teamId}_${row.questionIndex}`;
@@ -93,7 +143,7 @@ function renderSubmissions() {
       <td><button data-team="${row.teamId}" data-q="${row.questionIndex}" data-input="${inputId}" data-mark="${markId}">${t("common.save")}</button></td>
     `;
     submissionsBody.appendChild(tr);
-  });
+    });
 
   submissionsBody.querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -119,6 +169,7 @@ function renderAll() {
   renderQuestions();
   renderTeams();
   renderSubmissions();
+  updateAllSubmittedNotice();
   if (session) {
     setStatus(
       t("admin.stateLine", {
@@ -169,21 +220,38 @@ clearTeamsBtn.addEventListener("click", () => {
   setStatus(t("admin.teamsCleared"));
 });
 
+submissionsPrevBtn.addEventListener("click", () => {
+  submissionsQuestionPageIndex = Math.max(0, submissionsQuestionPageIndex - 1);
+  renderSubmissions();
+});
+
+submissionsNextBtn.addEventListener("click", () => {
+  const questionsCount = (session && session.questions ? session.questions.length : 0);
+  const maxIndex = Math.max(questionsCount - 1, 0);
+  submissionsQuestionPageIndex = Math.min(maxIndex, submissionsQuestionPageIndex + 1);
+  renderSubmissions();
+});
+
 socket.on("session:restored", (payload) => {
   session = payload.session;
   leaderboard = payload.leaderboard || [];
   submissions = payload.submissions || [];
   teams = Object.values(payload.session.teams || {});
+  if (session && session.currentQuestionIndex >= 0) {
+    submissionsQuestionPageIndex = session.currentQuestionIndex;
+  }
   renderAll();
 });
 
 socket.on("teams:update", (rows) => {
   teams = rows || [];
   renderTeams();
+  updateAllSubmittedNotice();
 });
 socket.on("submissions:update", (rows) => {
   submissions = rows || [];
   renderSubmissions();
+  updateAllSubmittedNotice();
 });
 
 window.I18N.init().then(() => {
@@ -204,6 +272,9 @@ window.I18N.init().then(() => {
       leaderboard = data.leaderboard || [];
       submissions = data.submissions || [];
       teams = Object.values(data.session.teams || {});
+      if (session && session.currentQuestionIndex >= 0) {
+        submissionsQuestionPageIndex = session.currentQuestionIndex;
+      }
       renderAll();
     });
 });
