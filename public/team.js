@@ -62,9 +62,6 @@ function renderMedia(question) {
 
 function renderQuestion(question) {
   currentQuestion = question;
-  selectedOptions = [];
-  answerInput.value = "";
-  hasSubmittedCurrentQuestion = false;
   if (!question) {
     questionTitle.textContent = quizFinished ? t("team.quizFinished") : t("team.waitingNext");
     optionsEl.innerHTML = "";
@@ -83,6 +80,9 @@ function renderQuestion(question) {
       btn.type = "button";
       btn.className = "option-btn";
       btn.textContent = opt;
+      if (selectedOptions.indexOf(opt) >= 0) {
+        btn.classList.add("selected");
+      }
       btn.addEventListener("click", function () {
         if (question.type === "true-false") {
           selectedOptions = [opt];
@@ -139,7 +139,14 @@ function applySession(session) {
     redirectToResults();
     return;
   }
-  currentQuestionIndex = Number(session.currentQuestionIndex ?? -1);
+  const nextQuestionIndex = Number(session.currentQuestionIndex ?? -1);
+  const isNewQuestion = nextQuestionIndex !== currentQuestionIndex;
+  currentQuestionIndex = nextQuestionIndex;
+  if (isNewQuestion) {
+    selectedOptions = [];
+    answerInput.value = "";
+    hasSubmittedCurrentQuestion = false;
+  }
   renderQuestion(session.currentQuestion || null);
   renderHeader();
 }
@@ -217,14 +224,27 @@ socket.on("team:session", (session) => {
 socket.on("quiz:state", (data) => {
   quizStarted = Boolean(data.quizStarted);
   quizFinished = Boolean(data.quizFinished);
-  currentQuestionIndex = Number(data.currentQuestionIndex ?? -1);
+  const nextQuestionIndex = Number(data.currentQuestionIndex ?? -1);
+  const isNewQuestion = nextQuestionIndex !== currentQuestionIndex;
+  currentQuestionIndex = nextQuestionIndex;
+  if (isNewQuestion) {
+    selectedOptions = [];
+    answerInput.value = "";
+    hasSubmittedCurrentQuestion = false;
+  }
   renderQuestion(data.currentQuestion || null);
   renderHeader();
 });
 
 socket.on("question:change", (data) => {
-  currentQuestionIndex = Number(data.index);
-  hasSubmittedCurrentQuestion = false;
+  const nextQuestionIndex = Number(data.index);
+  const isNewQuestion = nextQuestionIndex !== currentQuestionIndex;
+  currentQuestionIndex = nextQuestionIndex;
+  if (isNewQuestion) {
+    selectedOptions = [];
+    answerInput.value = "";
+    hasSubmittedCurrentQuestion = false;
+  }
   renderQuestion(data.currentQuestion || null);
   renderHeader();
 });

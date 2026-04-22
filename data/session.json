@@ -3,32 +3,22 @@
     {
       "id": "q_1",
       "type": "multiple-choice",
-      "questionText": "Which planet is known as the Red Planet?",
+      "questionText": "What is micro:bit?",
       "options": [
-        "Mars",
-        "Venus",
-        "Jupiter",
-        "Saturn"
+        "A microcontroller board for learning",
+        "A graphics card",
+        "A mobile phone",
+        "A Wi-Fi router"
       ],
       "correctAnswers": [
-        "Mars"
+        "A microcontroller board for learning"
       ],
       "mediaURL": ""
     },
     {
       "id": "q_2",
-      "type": "short-answer",
-      "questionText": "What is the capital city of France?",
-      "options": [],
-      "correctAnswers": [
-        "Paris"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_3",
       "type": "true-false",
-      "questionText": "The Pacific Ocean is larger than the Atlantic Ocean.",
+      "questionText": "The micro:bit has a built-in 5x5 LED display.",
       "options": [
         "True",
         "False"
@@ -39,52 +29,247 @@
       "mediaURL": ""
     },
     {
+      "id": "q_3",
+      "type": "multiple-choice",
+      "questionText": "How many buttons are on the front of a micro:bit?",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "5"
+      ],
+      "correctAnswers": [
+        "2"
+      ],
+      "mediaURL": ""
+    },
+    {
       "id": "q_4",
-      "type": "image",
-      "questionText": "Identify the landmark shown in this image.",
+      "type": "short-answer",
+      "questionText": "What editor is commonly used online to program micro:bit?",
       "options": [],
       "correctAnswers": [
-        "Eiffel Tower"
+        "MakeCode"
       ],
-      "mediaURL": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg"
+      "mediaURL": ""
     },
     {
       "id": "q_5",
-      "type": "video",
-      "questionText": "Name the instrument heard most prominently in this short clip.",
+      "type": "multiple-choice",
+      "questionText": "Which sensor is built into the micro:bit?",
       "options": [
-        "Piano",
-        "Violin",
-        "Guitar",
-        "Drums"
+        "Accelerometer",
+        "Water pump",
+        "Projector",
+        "CD drive"
       ],
       "correctAnswers": [
-        "Guitar"
+        "Accelerometer"
       ],
-      "mediaURL": "https://www.w3schools.com/html/mov_bbb.mp4"
+      "mediaURL": ""
     },
     {
       "id": "q_6",
-      "type": "audio",
-      "questionText": "Which animal sound is this?",
+      "type": "true-false",
+      "questionText": "The micro:bit can measure movement and tilt.",
       "options": [
-        "Dog",
-        "Cat",
-        "Bird",
-        "Cow"
+        "True",
+        "False"
       ],
       "correctAnswers": [
-        "Bird"
+        "True"
       ],
-      "mediaURL": "https://www.w3schools.com/html/horse.mp3"
+      "mediaURL": ""
     },
     {
       "id": "q_7",
+      "type": "multiple-choice",
+      "questionText": "What can the 5x5 LED display show?",
+      "options": [
+        "Text and simple images",
+        "Only videos",
+        "Only photos",
+        "Nothing"
+      ],
+      "correctAnswers": [
+        "Text and simple images"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_8",
+      "type": "multiple-choice",
+      "questionText": "Which pin is often used to connect a buzzer?",
+      "options": [
+        "P0",
+        "P8",
+        "P16",
+        "P25"
+      ],
+      "correctAnswers": [
+        "P0"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_9",
+      "type": "true-false",
+      "questionText": "You can transfer a program to micro:bit over USB.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_10",
+      "type": "multiple-choice",
+      "questionText": "What does the accelerometer detect?",
+      "options": [
+        "Tilt and shaking",
+        "Internet speed",
+        "Screen size",
+        "Battery brand"
+      ],
+      "correctAnswers": [
+        "Tilt and shaking"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_11",
+      "type": "multiple-choice",
+      "questionText": "Which can micro:bit use for wireless communication?",
+      "options": [
+        "Radio",
+        "HDMI",
+        "VGA",
+        "Ethernet"
+      ],
+      "correctAnswers": [
+        "Radio"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_12",
+      "type": "true-false",
+      "questionText": "The micro:bit can be powered by batteries.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_13",
+      "type": "multiple-choice",
+      "questionText": "Which block repeats actions forever in MakeCode?",
+      "options": [
+        "forever",
+        "pause",
+        "show string",
+        "plot"
+      ],
+      "correctAnswers": [
+        "forever"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_14",
       "type": "short-answer",
-      "questionText": "What is the third planet in solar system",
+      "questionText": "What is the 5x5 light area called?",
       "options": [],
       "correctAnswers": [
-        "Earth"
+        "LED display"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_15",
+      "type": "true-false",
+      "questionText": "The micro:bit can react to button A press.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_16",
+      "type": "multiple-choice",
+      "questionText": "What sensor measures temperature?",
+      "options": [
+        "Temperature sensor",
+        "Printer",
+        "Camera",
+        "Speaker"
+      ],
+      "correctAnswers": [
+        "Temperature sensor"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_17",
+      "type": "multiple-choice",
+      "questionText": "What project can micro:bit create?",
+      "options": [
+        "Step counter",
+        "Washing machine",
+        "Printer",
+        "Projector"
+      ],
+      "correctAnswers": [
+        "Step counter"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_18",
+      "type": "short-answer",
+      "questionText": "What is a named storage for data in a program?",
+      "options": [],
+      "correctAnswers": [
+        "variable"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_19",
+      "type": "true-false",
+      "questionText": "micro:bit can play melodies with a buzzer.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_20",
+      "type": "multiple-choice",
+      "questionText": "What does the compass detect?",
+      "options": [
+        "Direction",
+        "Brightness",
+        "File size",
+        "Water volume"
+      ],
+      "correctAnswers": [
+        "Direction"
       ],
       "mediaURL": ""
     }
@@ -96,25 +281,16 @@
     "team_1776750373214_b22ef6": {
       "id": "team_1776750373214_b22ef6",
       "name": "asd",
-      "joinedAt": 1776750373215,
+      "joinedAt": 1776750601891,
       "approved": true
     }
   },
   "answers": {
     "team_1776750373214_b22ef6": {
-      "score": 1
+      "score": 0
     }
   },
   "submissions": {
-    "team_1776750373214_b22ef6": {
-      "0": {
-        "answers": [
-          "Mars"
-        ],
-        "updatedAt": 1776750410748,
-        "isCorrect": true,
-        "manualIsCorrect": null
-      }
-    }
+    "team_1776750373214_b22ef6": {}
   }
 }

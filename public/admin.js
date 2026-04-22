@@ -191,8 +191,15 @@ window.I18N.init().then(() => {
     renderAll();
   });
   fetch("/api/session/admin")
-    .then((r) => r.json())
+    .then(async (r) => {
+      if (r.status === 401) {
+        window.location.assign("/admin-login");
+        return null;
+      }
+      return r.json();
+    })
     .then((data) => {
+      if (!data) return;
       session = data.session;
       leaderboard = data.leaderboard || [];
       submissions = data.submissions || [];

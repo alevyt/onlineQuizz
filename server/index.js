@@ -3,6 +3,7 @@ var http = require("http");
 var path = require("path");
 var os = require("os");
 var fs = require("fs");
+var crypto = require("crypto");
 var multer = require("multer");
 var socketIo = require("socket.io");
 var QRCode = require("qrcode");
@@ -15,6 +16,16 @@ var parseCsvFile = require("../utils/parseCsv").parseCsvFile;
 var app = express();
 var server = http.createServer(app);
 var io = socketIo(server);
+var ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "").trim();
+if (!ADMIN_PASSWORD) {
+  ADMIN_PASSWORD = "admin";
+}
+var ADMIN_COOKIE_NAME = "admin_auth";
+var ADMIN_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 12;
+var ADMIN_AUTH_TOKEN = crypto
+  .createHash("sha256")
+  .update("online-quizz-admin:" + ADMIN_PASSWORD)
+  .digest("hex");
 
 var uploadsDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -44,12 +55,82 @@ var upload = multer({ dest: uploadsDir });
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
 
+function parseCookies(req) {
+  var header = req.headers.cookie || "";
+  if (!header) return {};
+  return header.split(";").reduce(function (acc, part) {
+    var trimmed = part.trim();
+    if (!trimmed) return acc;
+    var eqIndex = trimmed.indexOf("=");
+    if (eqIndex <= 0) return acc;
+    var key = trimmed.slice(0, eqIndex);
+    var value = trimmed.slice(eqIndex + 1);
+    acc[key] = decodeURIComponent(value);
+    return acc;
+  }, {});
+}
+
+function isAdminAuthenticated(req) {
+  var cookies = parseCookies(req);
+  return cookies[ADMIN_COOKIE_NAME] === ADMIN_AUTH_TOKEN;
+}
+
+function requireAdminAuth(req, res, next) {
+  if (isAdminAuthenticated(req)) return next();
+  return res.status(401).json({ error: "Unauthorized" });
+}
+
 app.get("/admin", function (req, res) {
+  if (!isAdminAuthenticated(req)) {
+    return res.redirect("/admin-login");
+  }
   res.sendFile(path.join(__dirname, "..", "public", "admin.html"));
 });
 
+app.get("/admin-login", function (req, res) {
+  if (isAdminAuthenticated(req)) {
+    return res.redirect("/admin");
+  }
+  return res.sendFile(path.join(__dirname, "..", "public", "admin-login.html"));
+});
+
+app.post("/api/admin/login", function (req, res) {
+  var password = String((req.body && req.body.password) || "").trim();
+  if (!password || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Invalid password." });
+  }
+  var cookieParts = [
+    ADMIN_COOKIE_NAME + "=" + encodeURIComponent(ADMIN_AUTH_TOKEN),
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Strict",
+    "Max-Age=" + ADMIN_COOKIE_MAX_AGE_SECONDS
+  ];
+  res.setHeader("Set-Cookie", cookieParts.join("; "));
+  return res.json({ ok: true });
+});
+
+app.post("/api/admin/logout", function (req, res) {
+  var cookieParts = [
+    ADMIN_COOKIE_NAME + "=",
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Strict",
+    "Max-Age=0"
+  ];
+  res.setHeader("Set-Cookie", cookieParts.join("; "));
+  return res.json({ ok: true });
+});
+
 app.use(function (req, res, next) {
-  if (req.path === "/admin" || req.path === "/team" || req.path === "/leaderboard" || req.path === "/qr" || req.path === "/results") {
+  if (
+    req.path === "/admin" ||
+    req.path === "/admin-login" ||
+    req.path === "/team" ||
+    req.path === "/leaderboard" ||
+    req.path === "/qr" ||
+    req.path === "/results"
+  ) {
     return next();
   }
   if (req.path.indexOf("/api/") === 0) return next();
@@ -75,6 +156,9 @@ app.get("/results", function (req, res) {
 });
 
 app.get("/api/session/admin", function (req, res) {
+  if (!isAdminAuthenticated(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   res.json({
     session: quiz.getSessionForAdmin(),
     leaderboard: quiz.getLeaderboard(),
@@ -119,7 +203,7 @@ app.get("/api/qr", function (req, res) {
   });
 });
 
-app.post("/api/upload", upload.single("quizFile"), function (req, res) {
+app.post("/api/upload", requireAdminAuth, upload.single("quizFile"), function (req, res) {
   if (!req.file) {
     return res.status(400).json({ error: "quizFile is required." });
   }
@@ -151,7 +235,18 @@ app.post("/api/upload", upload.single("quizFile"), function (req, res) {
   return res.json({ ok: true, count: questions.length });
 });
 
-attachSocketHandlers(io);
+attachSocketHandlers(io, function (cookieHeader) {
+  if (!cookieHeader) return false;
+  var cookies = cookieHeader.split(";").reduce(function (acc, part) {
+    var trimmed = part.trim();
+    if (!trimmed) return acc;
+    var eqIndex = trimmed.indexOf("=");
+    if (eqIndex <= 0) return acc;
+    acc[trimmed.slice(0, eqIndex)] = decodeURIComponent(trimmed.slice(eqIndex + 1));
+    return acc;
+  }, {});
+  return cookies[ADMIN_COOKIE_NAME] === ADMIN_AUTH_TOKEN;
+});
 
 function getLocalIPv4() {
   var interfaces = os.networkInterfaces();

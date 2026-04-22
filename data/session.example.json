@@ -1,0 +1,9 @@
+{
+  "questions": [],
+  "currentQuestionIndex": -1,
+  "quizStarted": false,
+  "quizFinished": false,
+  "teams": {},
+  "answers": {},
+  "submissions": {}
+}

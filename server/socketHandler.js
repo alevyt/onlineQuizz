@@ -20,10 +20,17 @@ function broadcastState(io) {
   io.of("/admin").emit("submissions:update", submissions);
 }
 
-function attachSocketHandlers(io) {
+function attachSocketHandlers(io, isAdminSocketAuthorized) {
   const adminNs = io.of("/admin");
   const teamNs = io.of("/team");
   const leaderboardNs = io.of("/leaderboard");
+
+  adminNs.use((socket, next) => {
+    if (typeof isAdminSocketAuthorized !== "function") return next();
+    const cookieHeader = socket.handshake.headers ? socket.handshake.headers.cookie : "";
+    if (isAdminSocketAuthorized(cookieHeader)) return next();
+    return next(new Error("Unauthorized"));
+  });
 
   adminNs.on("connection", (socket) => {
     socket.emit("session:restored", {
