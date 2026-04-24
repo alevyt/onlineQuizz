@@ -71,6 +71,7 @@
     "teamNameRequired": "Team name is required.",
     "chooseOption": "Please choose at least one option.",
     "answerSubmitted": "Answer submitted.",
+    "skipConfirm": "Skip this question? You will not be able to answer it later.",
     "questionSkipped": "Question skipped.",
     "connected": "Connected.",
     "waitingApproval": "Connected. Waiting for admin approval.",

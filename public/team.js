@@ -184,6 +184,8 @@ submitBtn.addEventListener("click", () => {
 
 skipBtn.addEventListener("click", () => {
   if (!teamId || currentQuestionIndex < 0) return;
+  const ok = window.confirm(t("team.skipConfirm"));
+  if (!ok) return;
   socket.emit("answer:submit", {
     teamId,
     questionIndex: currentQuestionIndex,
