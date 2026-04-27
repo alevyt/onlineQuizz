@@ -122,37 +122,43 @@ function renderSubmissions() {
     .forEach((row) => {
     const tr = document.createElement("tr");
     const inputId = `a_${row.teamId}_${row.questionIndex}`;
-    const markId = `m_${row.teamId}_${row.questionIndex}`;
-    const selectedAuto = row.manualIsCorrect === null ? "selected" : "";
-    const selectedTrue = row.manualIsCorrect === true ? "selected" : "";
-    const selectedFalse = row.manualIsCorrect === false ? "selected" : "";
-    const autoLabel = t("admin.autoMark", {
-      result: row.isCorrect ? t("common.correct").toLowerCase() : t("common.incorrect").toLowerCase()
-    });
+    const markIsCorrect = row.manualIsCorrect === null ? Boolean(row.isCorrect) : Boolean(row.manualIsCorrect);
+    const markLabel = markIsCorrect ? t("common.correct") : t("common.incorrect");
     tr.innerHTML = `
       <td>${row.teamName}</td>
       <td>${row.questionIndex + 1}</td>
       <td><input id="${inputId}" type="text" value="${(row.answers || []).join("; ")}" /></td>
       <td>
-        <select id="${markId}">
-          <option value="auto" ${selectedAuto}>${autoLabel}</option>
-          <option value="true" ${selectedTrue}>${t("common.correct")}</option>
-          <option value="false" ${selectedFalse}>${t("common.incorrect")}</option>
-        </select>
+        <button data-toggle-mark-team="${row.teamId}" data-toggle-mark-q="${row.questionIndex}" data-toggle-mark-input="${inputId}" data-toggle-mark-current="${markIsCorrect}">
+          ${markLabel}
+        </button>
       </td>
-      <td><button data-team="${row.teamId}" data-q="${row.questionIndex}" data-input="${inputId}" data-mark="${markId}">${t("common.save")}</button></td>
+      <td><button data-save-team="${row.teamId}" data-save-q="${row.questionIndex}" data-save-input="${inputId}" data-save-mark="${markIsCorrect}">${t("common.save")}</button></td>
     `;
     submissionsBody.appendChild(tr);
     });
 
-  submissionsBody.querySelectorAll("button").forEach((btn) => {
+  submissionsBody.querySelectorAll("button[data-toggle-mark-team]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const teamId = btn.getAttribute("data-team");
-      const q = Number(btn.getAttribute("data-q"));
-      const input = document.getElementById(btn.getAttribute("data-input"));
-      const markSelect = document.getElementById(btn.getAttribute("data-mark"));
-      const markValue = markSelect ? markSelect.value : "auto";
-      const isCorrect = markValue === "auto" ? null : markValue === "true";
+      const teamId = btn.getAttribute("data-toggle-mark-team");
+      const q = Number(btn.getAttribute("data-toggle-mark-q"));
+      const input = document.getElementById(btn.getAttribute("data-toggle-mark-input"));
+      const current = btn.getAttribute("data-toggle-mark-current") === "true";
+      socket.emit("answer:edit", {
+        teamId,
+        questionIndex: q,
+        answers: input.value,
+        isCorrect: !current
+      });
+    });
+  });
+
+  submissionsBody.querySelectorAll("button[data-save-team]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const teamId = btn.getAttribute("data-save-team");
+      const q = Number(btn.getAttribute("data-save-q"));
+      const input = document.getElementById(btn.getAttribute("data-save-input"));
+      const isCorrect = btn.getAttribute("data-save-mark") === "true";
       socket.emit("answer:edit", {
         teamId,
         questionIndex: q,

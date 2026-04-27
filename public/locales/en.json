@@ -39,6 +39,7 @@
     "questionShort": "Q#",
     "answersSeparated": "Answers (; separated)",
     "mark": "Mark",
+    "markToggle": "Mark (click to toggle)",
     "approve": "Approve",
     "kick": "Kick",
     "kickConfirm": "Kick this team and remove their results?",
