@@ -118,8 +118,8 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
   });
 
   teamNs.on("connection", (socket) => {
-    socket.on("team:register", ({ teamId, teamName }) => {
-      const result = quiz.registerOrReconnectTeam({ teamId, teamName });
+    socket.on("team:register", ({ teamId, teamName, resetExisting }) => {
+      const result = quiz.registerOrReconnectTeam({ teamId, teamName, resetExisting });
       if (result.error) {
         socket.emit("team:error", { message: result.error });
         return;
@@ -131,6 +131,7 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
         team: result.team,
         teamId: finalTeamId,
         approved: Boolean(result.approved),
+        resetCount: result.resetCount || 0,
         session: quiz.getSessionForTeam(finalTeamId)
       });
       adminNs.emit("team:join", result.team);

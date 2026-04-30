@@ -153,11 +153,34 @@ function setCurrentQuestionIndex(index) {
   return true;
 }
 
-function registerOrReconnectTeam({ teamId, teamName }) {
-  const id = (teamId || "").trim() || `team_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+function resetTeamRecordsByName(teamName) {
+  const normalized = String(teamName || "").trim().toLowerCase();
+  if (!normalized) return 0;
+  let removed = 0;
+  Object.keys(state.teams).forEach((teamId) => {
+    const name = String(state.teams[teamId]?.name || "").trim().toLowerCase();
+    if (name !== normalized) return;
+    delete state.teams[teamId];
+    delete state.answers[teamId];
+    delete state.submissions[teamId];
+    removed += 1;
+  });
+  return removed;
+}
+
+function registerOrReconnectTeam({ teamId, teamName, resetExisting }) {
+  let id = (teamId || "").trim();
   const name = (teamName || "").trim();
   if (!name) {
     return { error: "Team name is required." };
+  }
+  let resetCount = 0;
+  if (Boolean(resetExisting)) {
+    resetCount = resetTeamRecordsByName(name);
+    id = "";
+  }
+  if (!id) {
+    id = `team_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
   }
 
   if (!state.teams[id]) {
@@ -177,7 +200,7 @@ function registerOrReconnectTeam({ teamId, teamName }) {
   }
 
   saveState();
-  return { team: state.teams[id], approved: Boolean(state.teams[id].approved) };
+  return { team: state.teams[id], approved: Boolean(state.teams[id].approved), resetCount };
 }
 
 function approveTeam(teamId) {

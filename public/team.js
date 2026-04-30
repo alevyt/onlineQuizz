@@ -4,6 +4,7 @@ const registerCard = document.getElementById("registerCard");
 const quizCard = document.getElementById("quizCard");
 const teamNameInput = document.getElementById("teamName");
 const joinBtn = document.getElementById("joinBtn");
+const resetPreviousTeamCheckbox = document.getElementById("resetPreviousTeamCheckbox");
 const questionTitle = document.getElementById("questionTitle");
 const optionsEl = document.getElementById("options");
 const mediaEl = document.getElementById("media");
@@ -151,17 +152,27 @@ function applySession(session) {
   renderHeader();
 }
 
-function registerTeam(forceTeamName) {
+function registerTeam(forceTeamName, options) {
+  const opts = options || {};
   const name = (forceTeamName || teamNameInput.value || "").trim();
   if (!name) {
     setMessage(t("team.teamNameRequired"));
     return;
   }
-  socket.emit("team:register", { teamId, teamName: name });
+  const resetExisting = Boolean(opts.allowReset && resetPreviousTeamCheckbox && resetPreviousTeamCheckbox.checked);
+  if (resetExisting) {
+    const ok = window.confirm(t("team.resetPreviousConfirm"));
+    if (!ok) return;
+  }
+  socket.emit("team:register", {
+    teamId: resetExisting ? "" : teamId,
+    teamName: name,
+    resetExisting
+  });
 }
 
 joinBtn.addEventListener("click", () => {
-  registerTeam();
+  registerTeam(null, { allowReset: true });
 });
 
 submitBtn.addEventListener("click", () => {
@@ -201,7 +212,7 @@ skipBtn.addEventListener("click", () => {
 
 socket.on("connect", () => {
   if (teamId && teamName) {
-    registerTeam(teamName);
+    registerTeam(teamName, { allowReset: false });
   }
 });
 
@@ -210,9 +221,14 @@ socket.on("team:registered", (payload) => {
   teamName = payload.team.name;
   localStorage.setItem("quiz_team_id", teamId);
   localStorage.setItem("quiz_team_name", teamName);
+  if (resetPreviousTeamCheckbox) {
+    resetPreviousTeamCheckbox.checked = false;
+  }
   showQuiz();
   applySession(payload.session);
-  if (payload.approved) {
+  if (payload.resetCount > 0) {
+    setMessage(t("team.resetDone", { count: payload.resetCount }));
+  } else if (payload.approved) {
     setMessage(t("team.connected"));
   } else {
     setMessage(t("team.waitingApproval"));
