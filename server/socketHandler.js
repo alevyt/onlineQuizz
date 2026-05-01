@@ -115,6 +115,14 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
       adminNs.emit("team:kicked", { teamId });
       broadcastState(io);
     });
+
+    socket.on("team:clear-info", ({ teamId }) => {
+      const result = quiz.kickTeam(teamId);
+      if (result.error) return;
+      teamNs.to(teamId).emit("team:kicked");
+      adminNs.emit("team:cleared", { teamId });
+      broadcastState(io);
+    });
   });
 
   teamNs.on("connection", (socket) => {

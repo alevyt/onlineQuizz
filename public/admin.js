@@ -35,11 +35,13 @@ function setStatus(text) {
 function updateAllSubmittedNotice() {
   if (!session || session.currentQuestionIndex < 0 || session.quizFinished) {
     allSubmittedNoticeEl.textContent = "";
+    nextBtn.classList.remove("attention-btn");
     return;
   }
   const approvedTeams = teams.filter((team) => Boolean(team && team.approved));
   if (!approvedTeams.length) {
     allSubmittedNoticeEl.textContent = "";
+    nextBtn.classList.remove("attention-btn");
     return;
   }
   const submittedByTeam = new Set(
@@ -48,9 +50,11 @@ function updateAllSubmittedNotice() {
   const allSubmitted = approvedTeams.every((team) => submittedByTeam.has(team.id));
   if (!allSubmitted) {
     allSubmittedNoticeEl.textContent = "";
+    nextBtn.classList.remove("attention-btn");
     return;
   }
   allSubmittedNoticeEl.textContent = t("admin.allTeamsSubmitted", { current: session.currentQuestionIndex + 1 });
+  nextBtn.classList.add("attention-btn");
 }
 
 function renderQuestions() {
@@ -74,6 +78,10 @@ function renderQuestions() {
 function renderTeams() {
   teamsBody.innerHTML = "";
   const scoreMap = {};
+  const currentQuestionIndex = session && typeof session.currentQuestionIndex === "number" ? session.currentQuestionIndex : -1;
+  const submittedByTeam = new Set(
+    submissions.filter((row) => row.questionIndex === currentQuestionIndex).map((row) => row.teamId)
+  );
   leaderboard.forEach((item) => {
     scoreMap[item.id] = item.score;
   });
@@ -81,8 +89,9 @@ function renderTeams() {
     const tr = document.createElement("tr");
     const approved = Boolean(team.approved);
     const score = scoreMap[team.id] || 0;
-    tr.innerHTML = `<td>${team.name}</td><td>${approved ? t("common.approved") : t("common.pending")}</td><td>${score}</td><td>${
-      `${approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`} <button data-kick="${team.id}">${t("admin.kick")}</button>`
+    const answeredCurrent = currentQuestionIndex >= 0 && submittedByTeam.has(team.id);
+    tr.innerHTML = `<td>${team.name}</td><td>${approved ? t("common.approved") : t("common.pending")}</td><td>${score}</td><td>${answeredCurrent ? t("common.yes") : t("common.no")}</td><td>${
+      `${approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`} <button data-clear-team="${team.id}">${t("admin.clearTeamInfo")}</button>`
     }</td>`;
     teamsBody.appendChild(tr);
   });
@@ -91,13 +100,13 @@ function renderTeams() {
       socket.emit("team:approve", { teamId: btn.getAttribute("data-approve") });
     });
   });
-  teamsBody.querySelectorAll("button[data-kick]").forEach((btn) => {
+  teamsBody.querySelectorAll("button[data-clear-team]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const teamId = btn.getAttribute("data-kick");
-      const ok = window.confirm(t("admin.kickConfirm"));
+      const teamId = btn.getAttribute("data-clear-team");
+      const ok = window.confirm(t("admin.clearTeamInfoConfirm"));
       if (!ok) return;
-      socket.emit("team:kick", { teamId });
-      setStatus(t("admin.teamKicked"));
+      socket.emit("team:clear-info", { teamId });
+      setStatus(t("admin.teamInfoCleared"));
     });
   });
 }
@@ -127,13 +136,15 @@ function renderSubmissions() {
     tr.innerHTML = `
       <td>${row.teamName}</td>
       <td>${row.questionIndex + 1}</td>
-      <td><input id="${inputId}" type="text" value="${(row.answers || []).join("; ")}" /></td>
+      <td class="answer-cell">
+        <input id="${inputId}" type="text" value="${(row.answers || []).join("; ")}" />
+        <button class="save-icon-btn" title="${t("common.save")}" aria-label="${t("common.save")}" data-save-team="${row.teamId}" data-save-q="${row.questionIndex}" data-save-input="${inputId}" data-save-mark="${markIsCorrect}">💾</button>
+      </td>
       <td>
         <button data-toggle-mark-team="${row.teamId}" data-toggle-mark-q="${row.questionIndex}" data-toggle-mark-input="${inputId}" data-toggle-mark-current="${markIsCorrect}">
           ${markLabel}
         </button>
       </td>
-      <td><button data-save-team="${row.teamId}" data-save-q="${row.questionIndex}" data-save-input="${inputId}" data-save-mark="${markIsCorrect}">${t("common.save")}</button></td>
     `;
     submissionsBody.appendChild(tr);
     });
@@ -257,6 +268,7 @@ socket.on("teams:update", (rows) => {
 socket.on("submissions:update", (rows) => {
   submissions = rows || [];
   renderSubmissions();
+  renderTeams();
   updateAllSubmittedNotice();
 });
 

@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no" class="notranslate">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Quiz Admin</title>
     <style>
@@ -15,7 +16,11 @@
       .section { margin-top: 20px; }
       .muted { color: #555; font-size: 14px; }
       .notice { color: #0b6b2f; font-weight: 600; margin-top: 6px; }
+      .attention-btn { background: #fff3cd; border: 1px solid #f0ad4e; font-weight: 700; }
       input[type="text"] { padding: 6px; width: 220px; }
+      .answer-cell { display: flex; align-items: center; gap: 6px; }
+      .answer-cell input { flex: 1; min-width: 160px; width: auto; }
+      .save-icon-btn { padding: 4px 8px; font-size: 12px; line-height: 1; }
       .lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     </style>
   </head>
@@ -65,7 +70,7 @@
       </div>
       <table id="teamsTable">
         <thead>
-          <tr><th data-i18n="common.name">Name</th><th data-i18n="common.status">Status</th><th data-i18n="common.score">Score</th><th data-i18n="common.action">Action</th></tr>
+          <tr><th data-i18n="common.name">Name</th><th data-i18n="common.status">Status</th><th data-i18n="common.score">Score</th><th data-i18n="admin.answeredCurrent">Answered current</th><th data-i18n="common.action">Action</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -85,7 +90,6 @@
             <th data-i18n="admin.questionShort">Q#</th>
             <th data-i18n="admin.answersSeparated">Answers (; separated)</th>
             <th data-i18n="admin.markToggle">Mark (click to toggle)</th>
-            <th data-i18n="common.action">Action</th>
           </tr>
         </thead>
         <tbody></tbody>
