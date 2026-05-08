@@ -1,0 +1,13 @@
+questionText,options,correctAnswers,mediaURL,answerType,mediaKind
+What is 2 + 2?,"3;4;5;6",4,,multiple-choice,
+The sky is blue.,"True;False",True,,true-false,
+Name the capital of France.,,Paris,,short-answer,
+Identify the animal in the picture.,"Cat;Dog;Rabbit;Fox",Dog,https://example.com/media/dog.jpg,multiple-choice,image
+The sound clip is a piano note.,"True;False",True,https://example.com/media/piano.mp3,true-false,audio
+How many wheels does a standard bicycle have?,"1;2;3;4",2,,multiple-choice,
+Watch the clip and choose the sport.,"Football;Basketball;Tennis;Volleyball",Tennis,https://example.com/media/tennis.mp4,multiple-choice,video
+micro:bit can run Python.,"True;False",True,,true-false,
+Write the chemical symbol for water.,,H2O,,short-answer,
+Choose all prime numbers.,"2;3;4;5","2;3;5",,multiple-choice,
+This image shows a triangle.,"True;False",True,https://example.com/media/triangle.png,true-false,image
+Name one programming language used with micro:bit.,,"Python;JavaScript",,short-answer,

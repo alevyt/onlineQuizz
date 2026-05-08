@@ -52,12 +52,15 @@ function redirectToResults() {
 function renderMedia(question) {
   mediaEl.innerHTML = "";
   if (!question || !question.mediaURL) return;
-  if (question.type === "image") {
+  const mediaKind = question.mediaKind || "";
+  if (mediaKind === "image") {
     mediaEl.innerHTML = `<img src="${question.mediaURL}" alt="${t("team.mediaAlt")}" />`;
-  } else if (question.type === "video") {
+  } else if (mediaKind === "video") {
     mediaEl.innerHTML = `<video src="${question.mediaURL}" controls></video>`;
-  } else if (question.type === "audio") {
+  } else if (mediaKind === "audio") {
     mediaEl.innerHTML = `<audio src="${question.mediaURL}" controls></audio>`;
+  } else {
+    mediaEl.innerHTML = `<a href="${question.mediaURL}" target="_blank" rel="noopener noreferrer">${question.mediaURL}</a>`;
   }
 }
 
@@ -70,10 +73,11 @@ function renderQuestion(question) {
     answerInput.style.display = "block";
     return;
   }
-  questionTitle.textContent = t("team.questionTypeLabel", { type: question.type, text: question.questionText });
+  const answerType = question.answerType || question.type;
+  questionTitle.textContent = t("team.questionTypeLabel", { type: answerType, text: question.questionText });
   renderMedia(question);
 
-  if (question.type === "multiple-choice" || question.type === "true-false") {
+  if (answerType === "multiple-choice" || answerType === "true-false") {
     answerInput.style.display = "none";
     optionsEl.innerHTML = "";
     (question.options || []).forEach((opt) => {
@@ -85,7 +89,7 @@ function renderQuestion(question) {
         btn.classList.add("selected");
       }
       btn.addEventListener("click", function () {
-        if (question.type === "true-false") {
+        if (answerType === "true-false") {
           selectedOptions = [opt];
         } else {
           var idx = selectedOptions.indexOf(opt);
@@ -178,7 +182,8 @@ joinBtn.addEventListener("click", () => {
 submitBtn.addEventListener("click", () => {
   if (!teamId || currentQuestionIndex < 0) return;
   var outgoingAnswers = answerInput.value;
-  if (currentQuestion && (currentQuestion.type === "multiple-choice" || currentQuestion.type === "true-false")) {
+  const answerType = currentQuestion ? currentQuestion.answerType || currentQuestion.type : "";
+  if (currentQuestion && (answerType === "multiple-choice" || answerType === "true-false")) {
     outgoingAnswers = selectedOptions;
     if (!selectedOptions.length) {
       setMessage(t("team.chooseOption"));

@@ -20,6 +20,43 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function inferMediaKindFromUrl(mediaURL) {
+  const url = String(mediaURL || "").trim().toLowerCase();
+  if (!url) return "";
+  const base = url.split("?")[0].split("#")[0];
+  if (/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(base)) return "image";
+  if (/\.(mp4|webm|mov|m4v|ogv)$/.test(base)) return "video";
+  if (/\.(mp3|wav|ogg|m4a|aac|flac)$/.test(base)) return "audio";
+  return "";
+}
+
+function normalizeQuestionShape(question) {
+  if (!question) return question;
+  const normalized = { ...question };
+  const legacyType = String(normalized.type || "").trim().toLowerCase();
+  const options = Array.isArray(normalized.options) ? normalized.options : [];
+  let answerType = String(normalized.answerType || "").trim().toLowerCase();
+  if (!answerType) {
+    if (legacyType === "multiple-choice" || legacyType === "short-answer" || legacyType === "true-false") {
+      answerType = legacyType;
+    } else {
+      answerType = options.length ? "multiple-choice" : "short-answer";
+    }
+  }
+  let mediaKind = String(normalized.mediaKind || "").trim().toLowerCase();
+  if (!mediaKind) {
+    if (legacyType === "image" || legacyType === "video" || legacyType === "audio") {
+      mediaKind = legacyType;
+    } else {
+      mediaKind = inferMediaKindFromUrl(normalized.mediaURL);
+    }
+  }
+  normalized.answerType = answerType;
+  normalized.mediaKind = mediaKind || "";
+  normalized.type = answerType;
+  return normalized;
+}
+
 function ensureDataFile() {
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
@@ -37,6 +74,7 @@ function loadState() {
     state = {
       ...clone(defaultState),
       ...parsed,
+      questions: Array.isArray(parsed.questions) ? parsed.questions.map(normalizeQuestionShape) : [],
       teams: parsed.teams || {},
       answers: parsed.answers || {},
       submissions: parsed.submissions || {}
@@ -58,12 +96,15 @@ function getState() {
 
 function getPublicQuestion(question) {
   if (!question) return null;
+  const normalized = normalizeQuestionShape(question);
   return {
-    id: question.id,
-    type: question.type,
-    questionText: question.questionText,
-    options: question.options || [],
-    mediaURL: question.mediaURL || ""
+    id: normalized.id,
+    type: normalized.answerType,
+    answerType: normalized.answerType,
+    mediaKind: normalized.mediaKind || "",
+    questionText: normalized.questionText,
+    options: normalized.options || [],
+    mediaURL: normalized.mediaURL || ""
   };
 }
 
@@ -102,7 +143,7 @@ function getSessionForTeam(teamId) {
 }
 
 function setQuestions(questions) {
-  state.questions = questions;
+  state.questions = (questions || []).map(normalizeQuestionShape);
   state.currentQuestionIndex = questions.length > 0 ? 0 : -1;
   state.quizStarted = false;
   state.quizFinished = false;
