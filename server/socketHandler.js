@@ -123,6 +123,14 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
       adminNs.emit("team:cleared", { teamId });
       broadcastState(io);
     });
+
+    socket.on("team:disqualify", ({ teamId }) => {
+      const result = quiz.kickTeam(teamId);
+      if (result.error) return;
+      teamNs.to(teamId).emit("team:disqualified");
+      adminNs.emit("team:disqualified", { teamId });
+      broadcastState(io);
+    });
   });
 
   teamNs.on("connection", (socket) => {

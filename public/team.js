@@ -311,6 +311,23 @@ socket.on("team:kicked", () => {
   setMessage(t("team.kickedNotice"));
 });
 
+socket.on("team:disqualified", () => {
+  localStorage.removeItem("quiz_team_id");
+  localStorage.removeItem("quiz_team_name");
+  teamId = "";
+  teamName = "";
+  currentQuestion = null;
+  currentQuestionIndex = -1;
+  selectedOptions = [];
+  hasSubmittedCurrentQuestion = false;
+  answerInput.value = "";
+  optionsEl.innerHTML = "";
+  renderQuestion(null);
+  registerCard.style.display = "block";
+  quizCard.style.display = "none";
+  setMessage(t("team.disqualifiedNotice"));
+});
+
 window.I18N.init().then(() => {
   window.I18N.bindLanguageSelector("langSelect", () => {
     window.I18N.applyToDocument(document);

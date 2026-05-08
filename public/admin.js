@@ -91,7 +91,7 @@ function renderTeams() {
     const score = scoreMap[team.id] || 0;
     const answeredCurrent = currentQuestionIndex >= 0 && submittedByTeam.has(team.id);
     tr.innerHTML = `<td>${team.name}</td><td>${approved ? t("common.approved") : t("common.pending")}</td><td>${score}</td><td>${answeredCurrent ? t("common.yes") : t("common.no")}</td><td>${
-      `${approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`} <button data-clear-team="${team.id}">${t("admin.clearTeamInfo")}</button>`
+      `${approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`} <button data-disqualify-team="${team.id}">${t("admin.disqualifyTeam")}</button> <button data-clear-team="${team.id}">${t("admin.clearTeamInfo")}</button>`
     }</td>`;
     teamsBody.appendChild(tr);
   });
@@ -107,6 +107,15 @@ function renderTeams() {
       if (!ok) return;
       socket.emit("team:clear-info", { teamId });
       setStatus(t("admin.teamInfoCleared"));
+    });
+  });
+  teamsBody.querySelectorAll("button[data-disqualify-team]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const teamId = btn.getAttribute("data-disqualify-team");
+      const ok = window.confirm(t("admin.disqualifyTeamConfirm"));
+      if (!ok) return;
+      socket.emit("team:disqualify", { teamId });
+      setStatus(t("admin.teamDisqualified"));
     });
   });
 }

@@ -42,6 +42,9 @@
     "mark": "Mark",
     "markToggle": "Mark (click to toggle)",
     "approve": "Approve",
+    "disqualifyTeam": "Disqualify",
+    "disqualifyTeamConfirm": "Disqualify this team for cheating? This will remove the team and clear data on their devices.",
+    "teamDisqualified": "Team disqualified.",
     "clearTeamInfo": "Clear Team Info",
     "clearTeamInfoConfirm": "Clear this team data and force clear data on team devices?",
     "teamInfoCleared": "Team info cleared.",
@@ -81,6 +84,7 @@
     "connected": "Connected.",
     "waitingApproval": "Connected. Waiting for admin approval.",
     "kickedNotice": "You were removed by admin.",
+    "disqualifiedNotice": "Your team was disqualified by admin.",
     "approvedNotice": "Approved by admin. You can submit answers now.",
     "questionTypeLabel": "{type}: {text}",
     "mediaAlt": "question media"
