@@ -5,11 +5,15 @@ let leaderboard = [];
 let submissions = [];
 let teams = [];
 let submissionsQuestionPageIndex = 0;
+let timerState = { active: false, remainingSec: 0, durationSec: 0 };
 
 const uploadForm = document.getElementById("uploadForm");
 const quizFile = document.getElementById("quizFile");
 const statusEl = document.getElementById("status");
 const allSubmittedNoticeEl = document.getElementById("allSubmittedNotice");
+const timerSecondsInput = document.getElementById("timerSecondsInput");
+const startTimerBtn = document.getElementById("startTimerBtn");
+const timerStatusEl = document.getElementById("timerStatus");
 const questionsBody = document.querySelector("#questionsTable tbody");
 const teamsBody = document.querySelector("#teamsTable tbody");
 const submissionsBody = document.querySelector("#submissionsTable tbody");
@@ -30,6 +34,14 @@ function t(key, params, fallback) {
 
 function setStatus(text) {
   statusEl.textContent = text;
+}
+
+function renderTimerStatus() {
+  if (!timerState.active) {
+    timerStatusEl.textContent = "";
+    return;
+  }
+  timerStatusEl.textContent = t("admin.timerRunning", { seconds: timerState.remainingSec });
 }
 
 function updateAllSubmittedNotice() {
@@ -196,6 +208,7 @@ function renderAll() {
   renderTeams();
   renderSubmissions();
   updateAllSubmittedNotice();
+  renderTimerStatus();
   if (session) {
     setStatus(
       t("admin.stateLine", {
@@ -246,6 +259,15 @@ clearTeamsBtn.addEventListener("click", () => {
   setStatus(t("admin.teamsCleared"));
 });
 
+startTimerBtn.addEventListener("click", () => {
+  const seconds = Number((timerSecondsInput && timerSecondsInput.value) || 0);
+  if (!seconds || seconds < 1) {
+    setStatus(t("admin.invalidTimerSeconds"));
+    return;
+  }
+  socket.emit("timer:start", { seconds: Math.floor(seconds) });
+});
+
 submissionsPrevBtn.addEventListener("click", () => {
   submissionsQuestionPageIndex = Math.max(0, submissionsQuestionPageIndex - 1);
   renderSubmissions();
@@ -279,6 +301,15 @@ socket.on("submissions:update", (rows) => {
   renderSubmissions();
   renderTeams();
   updateAllSubmittedNotice();
+});
+
+socket.on("timer:update", (payload) => {
+  timerState = {
+    active: Boolean(payload && payload.active),
+    remainingSec: Number((payload && payload.remainingSec) || 0),
+    durationSec: Number((payload && payload.durationSec) || 0)
+  };
+  renderTimerStatus();
 });
 
 window.I18N.init().then(() => {

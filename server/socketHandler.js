@@ -24,6 +24,80 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
   const adminNs = io.of("/admin");
   const teamNs = io.of("/team");
   const leaderboardNs = io.of("/leaderboard");
+  let timerInterval = null;
+  let timerEndAt = 0;
+  let timerDurationSec = 0;
+  let timerQuestionIndex = -1;
+
+  function getTimerPayload() {
+    if (!timerEndAt || !timerDurationSec) {
+      return { active: false, remainingSec: 0, durationSec: 0, questionIndex: -1 };
+    }
+    const remainingSec = Math.max(0, Math.ceil((timerEndAt - Date.now()) / 1000));
+    return {
+      active: remainingSec > 0,
+      remainingSec,
+      durationSec: timerDurationSec,
+      questionIndex: timerQuestionIndex
+    };
+  }
+
+  function emitTimerUpdate() {
+    const payload = getTimerPayload();
+    adminNs.emit("timer:update", payload);
+    teamNs.emit("timer:update", payload);
+  }
+
+  function clearTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    timerEndAt = 0;
+    timerDurationSec = 0;
+    timerQuestionIndex = -1;
+    emitTimerUpdate();
+  }
+
+  function startTimer(seconds) {
+    const duration = Math.max(1, Math.floor(Number(seconds) || 0));
+    const session = quiz.getSessionForAdmin();
+    if (session.currentQuestionIndex < 0 || session.quizFinished) return false;
+    clearTimer();
+    timerDurationSec = duration;
+    timerQuestionIndex = session.currentQuestionIndex;
+    timerEndAt = Date.now() + duration * 1000;
+    emitTimerUpdate();
+    timerInterval = setInterval(() => {
+      const remainingSec = Math.max(0, Math.ceil((timerEndAt - Date.now()) / 1000));
+      const currentSession = quiz.getSessionForAdmin();
+      if (currentSession.currentQuestionIndex !== timerQuestionIndex || currentSession.quizFinished) {
+        clearTimer();
+        return;
+      }
+      if (remainingSec <= 0) {
+        const lastIndex = (currentSession.questions || []).length - 1;
+        if (currentSession.currentQuestionIndex >= lastIndex) {
+          quiz.finishQuiz();
+          adminNs.emit("quiz:finish");
+          teamNs.emit("quiz:finish");
+        } else {
+          const nextIndex = currentSession.currentQuestionIndex + 1;
+          quiz.setCurrentQuestionIndex(nextIndex);
+          adminNs.emit("question:change", { index: nextIndex });
+          teamNs.emit("question:change", {
+            index: nextIndex,
+            currentQuestion: quiz.getPublicQuestion(quiz.getCurrentQuestion())
+          });
+        }
+        clearTimer();
+        broadcastState(io);
+        return;
+      }
+      emitTimerUpdate();
+    }, 500);
+    return true;
+  }
 
   adminNs.use((socket, next) => {
     if (typeof isAdminSocketAuthorized !== "function") return next();
@@ -39,8 +113,10 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
       submissions: quiz.getSubmissionsView()
     });
     socket.emit("teams:update", Object.values(quiz.getState().teams));
+    socket.emit("timer:update", getTimerPayload());
 
     socket.on("quiz:start", () => {
+      clearTimer();
       const ok = quiz.startQuiz();
       if (ok) {
         adminNs.emit("quiz:start");
@@ -50,6 +126,7 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
     });
 
     socket.on("quiz:finish", () => {
+      clearTimer();
       quiz.finishQuiz();
       adminNs.emit("quiz:finish");
       teamNs.emit("quiz:finish");
@@ -57,6 +134,7 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
     });
 
     socket.on("quiz:clear", () => {
+      clearTimer();
       quiz.clearQuiz();
       adminNs.emit("quiz:clear");
       teamNs.emit("quiz:clear");
@@ -71,6 +149,7 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
     });
 
     socket.on("question:set", ({ index }) => {
+      clearTimer();
       const ok = quiz.setCurrentQuestionIndex(Number(index));
       if (!ok) return;
       adminNs.emit("question:change", { index: Number(index) });
@@ -78,6 +157,12 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
         index: Number(index),
         currentQuestion: quiz.getPublicQuestion(quiz.getCurrentQuestion())
       });
+      broadcastState(io);
+    });
+
+    socket.on("timer:start", ({ seconds }) => {
+      const ok = startTimer(seconds);
+      if (!ok) return;
       broadcastState(io);
     });
 
@@ -134,6 +219,7 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
   });
 
   teamNs.on("connection", (socket) => {
+    socket.emit("timer:update", getTimerPayload());
     socket.on("team:register", ({ teamId, teamName, resetExisting }) => {
       const result = quiz.registerOrReconnectTeam({ teamId, teamName, resetExisting });
       if (result.error) {

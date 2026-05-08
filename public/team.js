@@ -13,6 +13,7 @@ const submitBtn = document.getElementById("submitBtn");
 const skipBtn = document.getElementById("skipBtn");
 const msgEl = document.getElementById("msg");
 const headerEl = document.getElementById("header");
+const timerStatusEl = document.getElementById("timerStatus");
 
 var params = new URLSearchParams(window.location.search);
 var urlTeamId = params.get("teamId") || params.get("tid") || "";
@@ -27,6 +28,7 @@ let quizFinished = false;
 let approved = false;
 let selectedOptions = [];
 let hasSubmittedCurrentQuestion = false;
+let timerState = { active: false, remainingSec: 0 };
 
 function t(key, params, fallback) {
   return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
@@ -42,6 +44,14 @@ if (urlTeamId) {
 
 function setMessage(text) {
   msgEl.textContent = text;
+}
+
+function renderTimerStatus() {
+  if (!timerState.active) {
+    timerStatusEl.textContent = "";
+    return;
+  }
+  timerStatusEl.textContent = t("team.timerRunning", { seconds: timerState.remainingSec });
 }
 
 function redirectToResults() {
@@ -126,6 +136,7 @@ function renderHeader() {
   const disableActions = !approved || currentQuestionIndex < 0 || quizFinished || hasSubmittedCurrentQuestion;
   submitBtn.disabled = disableActions;
   skipBtn.disabled = disableActions;
+  renderTimerStatus();
 }
 
 function showQuiz() {
@@ -286,6 +297,14 @@ socket.on("quiz:finish", () => {
 
 socket.on("team:error", ({ message }) => {
   setMessage(message || t("common.unknownError"));
+});
+
+socket.on("timer:update", (payload) => {
+  timerState = {
+    active: Boolean(payload && payload.active),
+    remainingSec: Number((payload && payload.remainingSec) || 0)
+  };
+  renderTimerStatus();
 });
 
 socket.on("team:approved", () => {

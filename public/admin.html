@@ -42,6 +42,11 @@
       <button id="finishBtn" data-i18n="admin.finishQuiz">Finish Quiz</button>
       <button id="clearBtn" type="button" data-i18n="admin.clearQuiz">Clear Quiz</button>
     </div>
+    <div class="row">
+      <input id="timerSecondsInput" type="number" min="1" step="1" value="30" />
+      <button id="startTimerBtn" type="button" data-i18n="admin.startTimer">Start Timer</button>
+      <span id="timerStatus" class="muted"></span>
+    </div>
 
     <div id="status" class="muted"></div>
     <div id="allSubmittedNotice" class="notice"></div>
