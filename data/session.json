@@ -3,22 +3,26 @@
     {
       "id": "q_1",
       "type": "multiple-choice",
-      "questionText": "What is micro:bit?",
+      "answerType": "multiple-choice",
+      "mediaKind": "",
+      "questionText": "What is 2 + 2?",
       "options": [
-        "A microcontroller board for learning",
-        "A graphics card",
-        "A mobile phone",
-        "A Wi-Fi router"
+        "3",
+        "4",
+        "5",
+        "6"
       ],
       "correctAnswers": [
-        "A microcontroller board for learning"
+        "4"
       ],
       "mediaURL": ""
     },
     {
       "id": "q_2",
       "type": "true-false",
-      "questionText": "The micro:bit has a built-in 5x5 LED display.",
+      "answerType": "true-false",
+      "mediaKind": "",
+      "questionText": "The sky is blue.",
       "options": [
         "True",
         "False"
@@ -30,13 +34,59 @@
     },
     {
       "id": "q_3",
+      "type": "short-answer",
+      "answerType": "short-answer",
+      "mediaKind": "",
+      "questionText": "Name the capital of France.",
+      "options": [],
+      "correctAnswers": [
+        "Paris"
+      ],
+      "mediaURL": ""
+    },
+    {
+      "id": "q_4",
       "type": "multiple-choice",
-      "questionText": "How many buttons are on the front of a micro:bit?",
+      "answerType": "multiple-choice",
+      "mediaKind": "image",
+      "questionText": "Identify the animal in the picture.",
+      "options": [
+        "Cat",
+        "Dog",
+        "Rabbit",
+        "Fox"
+      ],
+      "correctAnswers": [
+        "Dog"
+      ],
+      "mediaURL": "https://example.com/media/dog.jpg"
+    },
+    {
+      "id": "q_5",
+      "type": "true-false",
+      "answerType": "true-false",
+      "mediaKind": "audio",
+      "questionText": "The sound clip is a piano note.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ],
+      "mediaURL": "https://example.com/media/piano.mp3"
+    },
+    {
+      "id": "q_6",
+      "type": "multiple-choice",
+      "answerType": "multiple-choice",
+      "mediaKind": "",
+      "questionText": "How many wheels does a standard bicycle have?",
       "options": [
         "1",
         "2",
         "3",
-        "5"
+        "4"
       ],
       "correctAnswers": [
         "2"
@@ -44,253 +94,139 @@
       "mediaURL": ""
     },
     {
-      "id": "q_4",
-      "type": "short-answer",
-      "questionText": "What editor is commonly used online to program micro:bit?",
-      "options": [],
-      "correctAnswers": [
-        "MakeCode"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_5",
+      "id": "q_7",
       "type": "multiple-choice",
-      "questionText": "Which sensor is built into the micro:bit?",
+      "answerType": "multiple-choice",
+      "mediaKind": "video",
+      "questionText": "Watch the clip and choose the sport.",
       "options": [
-        "Accelerometer",
-        "Water pump",
-        "Projector",
-        "CD drive"
+        "Football",
+        "Basketball",
+        "Tennis",
+        "Volleyball"
       ],
       "correctAnswers": [
-        "Accelerometer"
+        "Tennis"
       ],
-      "mediaURL": ""
+      "mediaURL": "https://example.com/media/tennis.mp4"
     },
     {
-      "id": "q_6",
+      "id": "q_8",
       "type": "true-false",
-      "questionText": "The micro:bit can measure movement and tilt.",
+      "answerType": "true-false",
+      "mediaKind": "",
+      "questionText": "micro:bit can run Python.",
       "options": [
         "True",
         "False"
       ],
       "correctAnswers": [
         "True"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_7",
-      "type": "multiple-choice",
-      "questionText": "What can the 5x5 LED display show?",
-      "options": [
-        "Text and simple images",
-        "Only videos",
-        "Only photos",
-        "Nothing"
-      ],
-      "correctAnswers": [
-        "Text and simple images"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_8",
-      "type": "multiple-choice",
-      "questionText": "Which pin is often used to connect a buzzer?",
-      "options": [
-        "P0",
-        "P8",
-        "P16",
-        "P25"
-      ],
-      "correctAnswers": [
-        "P0"
       ],
       "mediaURL": ""
     },
     {
       "id": "q_9",
-      "type": "true-false",
-      "questionText": "You can transfer a program to micro:bit over USB.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "type": "short-answer",
+      "answerType": "short-answer",
+      "mediaKind": "",
+      "questionText": "Write the chemical symbol for water.",
+      "options": [],
       "correctAnswers": [
-        "True"
+        "H2O"
       ],
       "mediaURL": ""
     },
     {
       "id": "q_10",
       "type": "multiple-choice",
-      "questionText": "What does the accelerometer detect?",
+      "answerType": "multiple-choice",
+      "mediaKind": "",
+      "questionText": "Choose all prime numbers.",
       "options": [
-        "Tilt and shaking",
-        "Internet speed",
-        "Screen size",
-        "Battery brand"
+        "2",
+        "3",
+        "4",
+        "5"
       ],
       "correctAnswers": [
-        "Tilt and shaking"
+        "2",
+        "3",
+        "5"
       ],
       "mediaURL": ""
     },
     {
       "id": "q_11",
-      "type": "multiple-choice",
-      "questionText": "Which can micro:bit use for wireless communication?",
+      "type": "true-false",
+      "answerType": "true-false",
+      "mediaKind": "image",
+      "questionText": "This image shows a triangle.",
       "options": [
-        "Radio",
-        "HDMI",
-        "VGA",
-        "Ethernet"
+        "True",
+        "False"
       ],
       "correctAnswers": [
-        "Radio"
+        "True"
       ],
-      "mediaURL": ""
+      "mediaURL": "https://example.com/media/triangle.png"
     },
     {
       "id": "q_12",
-      "type": "true-false",
-      "questionText": "The micro:bit can be powered by batteries.",
-      "options": [
-        "True",
-        "False"
-      ],
-      "correctAnswers": [
-        "True"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_13",
-      "type": "multiple-choice",
-      "questionText": "Which block repeats actions forever in MakeCode?",
-      "options": [
-        "forever",
-        "pause",
-        "show string",
-        "plot"
-      ],
-      "correctAnswers": [
-        "forever"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_14",
       "type": "short-answer",
-      "questionText": "What is the 5x5 light area called?",
+      "answerType": "short-answer",
+      "mediaKind": "",
+      "questionText": "Name one programming language used with micro:bit.",
       "options": [],
       "correctAnswers": [
-        "LED display"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_15",
-      "type": "true-false",
-      "questionText": "The micro:bit can react to button A press.",
-      "options": [
-        "True",
-        "False"
-      ],
-      "correctAnswers": [
-        "True"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_16",
-      "type": "multiple-choice",
-      "questionText": "What sensor measures temperature?",
-      "options": [
-        "Temperature sensor",
-        "Printer",
-        "Camera",
-        "Speaker"
-      ],
-      "correctAnswers": [
-        "Temperature sensor"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_17",
-      "type": "multiple-choice",
-      "questionText": "What project can micro:bit create?",
-      "options": [
-        "Step counter",
-        "Washing machine",
-        "Printer",
-        "Projector"
-      ],
-      "correctAnswers": [
-        "Step counter"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_18",
-      "type": "short-answer",
-      "questionText": "What is a named storage for data in a program?",
-      "options": [],
-      "correctAnswers": [
-        "variable"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_19",
-      "type": "true-false",
-      "questionText": "micro:bit can play melodies with a buzzer.",
-      "options": [
-        "True",
-        "False"
-      ],
-      "correctAnswers": [
-        "True"
-      ],
-      "mediaURL": ""
-    },
-    {
-      "id": "q_20",
-      "type": "multiple-choice",
-      "questionText": "What does the compass detect?",
-      "options": [
-        "Direction",
-        "Brightness",
-        "File size",
-        "Water volume"
-      ],
-      "correctAnswers": [
-        "Direction"
+        "Python",
+        "JavaScript"
       ],
       "mediaURL": ""
     }
   ],
-  "currentQuestionIndex": 0,
-  "quizStarted": false,
+  "currentQuestionIndex": 3,
+  "quizStarted": true,
   "quizFinished": false,
   "teams": {
     "team_1776750373214_b22ef6": {
       "id": "team_1776750373214_b22ef6",
       "name": "asd",
-      "joinedAt": 1776750601891,
+      "joinedAt": 1778225114612,
       "approved": true
     }
   },
   "answers": {
     "team_1776750373214_b22ef6": {
-      "score": 0
+      "score": 2
     }
   },
   "submissions": {
-    "team_1776750373214_b22ef6": {}
+    "team_1776750373214_b22ef6": {
+      "0": {
+        "answers": [
+          "4"
+        ],
+        "updatedAt": 1778225136765,
+        "isCorrect": true,
+        "manualIsCorrect": null
+      },
+      "1": {
+        "answers": [
+          "True"
+        ],
+        "updatedAt": 1778225149440,
+        "isCorrect": true,
+        "manualIsCorrect": null
+      },
+      "2": {
+        "answers": [
+          "hello"
+        ],
+        "updatedAt": 1778225158799,
+        "isCorrect": false,
+        "manualIsCorrect": null
+      }
+    }
   }
 }
