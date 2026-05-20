@@ -29,6 +29,10 @@ let approved = false;
 let selectedOptions = [];
 let hasSubmittedCurrentQuestion = false;
 let timerState = { active: false, remainingSec: 0 };
+let lastAwayReported = null;
+let showingVisibilityWarning = false;
+let adminWarningText = "";
+let statusText = "";
 
 function t(key, params, fallback) {
   return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
@@ -43,7 +47,50 @@ if (urlTeamId) {
 }
 
 function setMessage(text) {
-  msgEl.textContent = text;
+  statusText = text || "";
+  refreshWarningDisplay();
+}
+
+function refreshWarningDisplay() {
+  if (adminWarningText) {
+    msgEl.style.color = "#b45309";
+    msgEl.style.fontWeight = "bold";
+    msgEl.textContent = adminWarningText;
+    return;
+  }
+  if (showingVisibilityWarning) {
+    msgEl.style.color = "#b45309";
+    msgEl.style.fontWeight = "bold";
+    msgEl.textContent = t("team.visibilityWarning");
+    return;
+  }
+  msgEl.style.color = "";
+  msgEl.style.fontWeight = "";
+  msgEl.textContent = statusText;
+}
+
+function setAdminWarning(message) {
+  adminWarningText = String(message || "").trim();
+  refreshWarningDisplay();
+}
+
+function clearAdminWarning() {
+  adminWarningText = "";
+  refreshWarningDisplay();
+}
+
+function setVisibilityWarning(show) {
+  showingVisibilityWarning = Boolean(show);
+  refreshWarningDisplay();
+}
+
+function reportVisibility() {
+  if (!teamId) return;
+  const away = document.visibilityState === "hidden";
+  if (away === lastAwayReported) return;
+  lastAwayReported = away;
+  socket.emit("team:visibility", { teamId, away });
+  if (!away) setVisibilityWarning(false);
 }
 
 function renderTimerStatus() {
@@ -228,11 +275,13 @@ skipBtn.addEventListener("click", () => {
 
 socket.on("connect", () => {
   if (teamId && teamName) {
+    lastAwayReported = null;
     registerTeam(teamName, { allowReset: false });
   }
 });
 
 socket.on("team:registered", (payload) => {
+  lastAwayReported = null;
   teamId = payload.teamId;
   teamName = payload.team.name;
   localStorage.setItem("quiz_team_id", teamId);
@@ -249,6 +298,7 @@ socket.on("team:registered", (payload) => {
   } else {
     setMessage(t("team.waitingApproval"));
   }
+  reportVisibility();
 });
 
 socket.on("team:session", (session) => {
@@ -314,6 +364,9 @@ socket.on("team:approved", () => {
 });
 
 socket.on("team:kicked", () => {
+  lastAwayReported = null;
+  clearAdminWarning();
+  setVisibilityWarning(false);
   localStorage.removeItem("quiz_team_id");
   localStorage.removeItem("quiz_team_name");
   teamId = "";
@@ -330,7 +383,26 @@ socket.on("team:kicked", () => {
   setMessage(t("team.kickedNotice"));
 });
 
+socket.on("team:warn", (payload) => {
+  setAdminWarning(payload && payload.message);
+});
+
+socket.on("team:visibility-warning", () => {
+  setVisibilityWarning(true);
+});
+
+socket.on("team:visibility-clear", () => {
+  setVisibilityWarning(false);
+});
+
+document.addEventListener("visibilitychange", reportVisibility);
+window.addEventListener("blur", reportVisibility);
+window.addEventListener("focus", reportVisibility);
+
 socket.on("team:disqualified", () => {
+  lastAwayReported = null;
+  clearAdminWarning();
+  setVisibilityWarning(false);
   localStorage.removeItem("quiz_team_id");
   localStorage.removeItem("quiz_team_name");
   teamId = "";
@@ -353,11 +425,14 @@ window.I18N.init().then(() => {
     document.title = t("team.title");
     renderQuestion(currentQuestion);
     renderHeader();
+    if (adminWarningText) setAdminWarning(adminWarningText);
+    else if (showingVisibilityWarning) setVisibilityWarning(true);
   });
   window.I18N.applyToDocument(document);
   document.title = t("team.title");
 
   if (teamId && teamName) {
+    reportVisibility();
     fetch(`/api/session/team/${encodeURIComponent(teamId)}`)
       .then((r) => r.json())
       .then((session) => {

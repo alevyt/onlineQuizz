@@ -225,11 +225,14 @@ function registerOrReconnectTeam({ teamId, teamName, resetExisting }) {
   }
 
   if (!state.teams[id]) {
-    state.teams[id] = { id, name, joinedAt: Date.now(), approved: false };
+    state.teams[id] = { id, name, joinedAt: Date.now(), approved: false, away: false };
   } else {
     state.teams[id].name = name;
     if (typeof state.teams[id].approved !== "boolean") {
       state.teams[id].approved = false;
+    }
+    if (typeof state.teams[id].away !== "boolean") {
+      state.teams[id].away = false;
     }
   }
 
@@ -258,6 +261,14 @@ function kickTeam(teamId) {
   delete state.teams[teamId];
   delete state.answers[teamId];
   delete state.submissions[teamId];
+  saveState();
+  return { ok: true, team };
+}
+
+function setTeamAway(teamId, away) {
+  const team = state.teams[teamId];
+  if (!team) return { error: "Team not found." };
+  team.away = Boolean(away);
   saveState();
   return { ok: true, team };
 }
@@ -386,6 +397,11 @@ function getSubmissionsView() {
 }
 
 loadState();
+Object.keys(state.teams).forEach((teamId) => {
+  if (typeof state.teams[teamId].away !== "boolean") {
+    state.teams[teamId].away = false;
+  }
+});
 
 module.exports = {
   getState,
@@ -402,6 +418,7 @@ module.exports = {
   registerOrReconnectTeam,
   approveTeam,
   kickTeam,
+  setTeamAway,
   submitAnswer,
   editTeamAnswer,
   getLeaderboard,

@@ -216,6 +216,15 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
       adminNs.emit("team:disqualified", { teamId });
       broadcastState(io);
     });
+
+    socket.on("team:warn", ({ teamId, message }) => {
+      const team = quiz.getState().teams[teamId];
+      if (!team) return;
+      const text = String(message || "").trim().slice(0, 500);
+      if (!text) return;
+      teamNs.to(teamId).emit("team:warn", { message: text });
+      adminNs.emit("team:warned", { teamId, message: text });
+    });
   });
 
   teamNs.on("connection", (socket) => {
@@ -258,6 +267,25 @@ function attachSocketHandlers(io, isAdminSocketAuthorized) {
       const session = quiz.getSessionForTeam(teamId);
       teamNs.to(teamId).emit("team:session", session);
       broadcastState(io);
+    });
+
+    socket.on("team:visibility", ({ teamId, away }) => {
+      const id = (teamId || socket.data.teamId || "").trim();
+      if (!id || id !== socket.data.teamId) return;
+      const result = quiz.setTeamAway(id, Boolean(away));
+      if (result.error) return;
+      adminNs.emit("teams:update", Object.values(quiz.getState().teams));
+      if (away) {
+        socket.emit("team:visibility-warning");
+      } else {
+        socket.emit("team:visibility-clear");
+      }
+    });
+
+    socket.on("disconnect", () => {
+      if (!socket.data.teamId) return;
+      quiz.setTeamAway(socket.data.teamId, false);
+      adminNs.emit("teams:update", Object.values(quiz.getState().teams));
     });
   });
 

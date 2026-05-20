@@ -102,8 +102,10 @@ function renderTeams() {
     const approved = Boolean(team.approved);
     const score = scoreMap[team.id] || 0;
     const answeredCurrent = currentQuestionIndex >= 0 && submittedByTeam.has(team.id);
-    tr.innerHTML = `<td>${team.name}</td><td>${approved ? t("common.approved") : t("common.pending")}</td><td>${score}</td><td>${answeredCurrent ? t("common.yes") : t("common.no")}</td><td>${
-      `${approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`} <button data-disqualify-team="${team.id}">${t("admin.disqualifyTeam")}</button> <button data-clear-team="${team.id}">${t("admin.clearTeamInfo")}</button>`
+    const away = Boolean(team.away);
+    if (away) tr.classList.add("team-away-row");
+    tr.innerHTML = `<td>${team.name}</td><td>${approved ? t("common.approved") : t("common.pending")}</td><td>${score}</td><td>${answeredCurrent ? t("common.yes") : t("common.no")}</td><td class="${away ? "team-away-cell" : ""}">${away ? t("admin.awayYes") : t("admin.awayNo")}</td><td>${
+      `${approved ? "-" : `<button data-approve="${team.id}">${t("admin.approve")}</button>`} <button data-warn-team="${team.id}">${t("admin.sendWarning")}</button> <button data-disqualify-team="${team.id}">${t("admin.disqualifyTeam")}</button> <button data-clear-team="${team.id}">${t("admin.clearTeamInfo")}</button>`
     }</td>`;
     teamsBody.appendChild(tr);
   });
@@ -119,6 +121,17 @@ function renderTeams() {
       if (!ok) return;
       socket.emit("team:clear-info", { teamId });
       setStatus(t("admin.teamInfoCleared"));
+    });
+  });
+  teamsBody.querySelectorAll("button[data-warn-team]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const teamId = btn.getAttribute("data-warn-team");
+      const defaultMessage = t("admin.warnTeamDefaultMessage");
+      const message = window.prompt(t("admin.warnTeamPrompt"), defaultMessage);
+      if (message === null) return;
+      const text = message.trim() || defaultMessage;
+      socket.emit("team:warn", { teamId, message: text });
+      setStatus(t("admin.teamWarned"));
     });
   });
   teamsBody.querySelectorAll("button[data-disqualify-team]").forEach((btn) => {
