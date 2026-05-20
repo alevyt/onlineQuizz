@@ -1,8 +1,11 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const dataDir = path.join(__dirname, "..", "data");
-const sessionFilePath = path.join(dataDir, "session.json");
+const sessionsDir = path.join(dataDir, "sessions");
+const legacySessionFilePath = path.join(dataDir, "session.json");
+const SESSION_ID_RE = /^[a-zA-Z0-9_-]{8,32}$/;
 
 const defaultState = {
   questions: [],
@@ -14,10 +17,20 @@ const defaultState = {
   submissions: {}
 };
 
-let state = null;
+const sessions = new Map();
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function normalizeSessionId(sessionId) {
+  const id = String(sessionId || "").trim();
+  if (!SESSION_ID_RE.test(id)) return null;
+  return id;
+}
+
+function generateSessionId() {
+  return crypto.randomBytes(6).toString("hex");
 }
 
 function inferMediaKindFromUrl(mediaURL) {
@@ -57,41 +70,179 @@ function normalizeQuestionShape(question) {
   return normalized;
 }
 
-function ensureDataFile() {
+function ensureDataDirs() {
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
-  if (!fs.existsSync(sessionFilePath)) {
-    fs.writeFileSync(sessionFilePath, JSON.stringify(defaultState, null, 2), "utf8");
+  if (!fs.existsSync(sessionsDir)) {
+    fs.mkdirSync(sessionsDir, { recursive: true });
   }
 }
 
-function loadState() {
-  ensureDataFile();
+function sessionFilePath(sessionId) {
+  return path.join(sessionsDir, sessionId + ".json");
+}
+
+function migrateLegacySessionFile() {
+  ensureDataDirs();
+  if (!fs.existsSync(legacySessionFilePath)) return;
+  const target = sessionFilePath("default");
+  if (fs.existsSync(target)) return;
   try {
-    const raw = fs.readFileSync(sessionFilePath, "utf8");
-    const parsed = JSON.parse(raw);
-    state = {
-      ...clone(defaultState),
-      ...parsed,
-      questions: Array.isArray(parsed.questions) ? parsed.questions.map(normalizeQuestionShape) : [],
-      teams: parsed.teams || {},
-      answers: parsed.answers || {},
-      submissions: parsed.submissions || {}
-    };
+    fs.copyFileSync(legacySessionFilePath, target);
   } catch (error) {
-    state = clone(defaultState);
-    saveState();
+    // Ignore migration errors.
   }
 }
 
-function saveState() {
-  ensureDataFile();
-  fs.writeFileSync(sessionFilePath, JSON.stringify(state, null, 2), "utf8");
+function parseStateFromRaw(parsed) {
+  return {
+    ...clone(defaultState),
+    ...parsed,
+    questions: Array.isArray(parsed.questions) ? parsed.questions.map(normalizeQuestionShape) : [],
+    teams: parsed.teams || {},
+    answers: parsed.answers || {},
+    submissions: parsed.submissions || {}
+  };
 }
 
-function getState() {
-  return state;
+function loadSessionFromDisk(sessionId) {
+  ensureDataDirs();
+  const filePath = sessionFilePath(sessionId);
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    const state = parseStateFromRaw(parsed);
+    Object.keys(state.teams).forEach((teamId) => {
+      if (typeof state.teams[teamId].away !== "boolean") {
+        state.teams[teamId].away = false;
+      }
+    });
+    return state;
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveSessionToDisk(sessionId, state) {
+  ensureDataDirs();
+  fs.writeFileSync(sessionFilePath(sessionId), JSON.stringify(state, null, 2), "utf8");
+}
+
+function getState(sessionId) {
+  const id = normalizeSessionId(sessionId);
+  if (!id) return null;
+  if (!sessions.has(id)) {
+    const loaded = loadSessionFromDisk(id);
+    if (!loaded) return null;
+    sessions.set(id, loaded);
+  }
+  return sessions.get(id);
+}
+
+function ensureSession(sessionId) {
+  const id = normalizeSessionId(sessionId);
+  if (!id) return null;
+  if (!sessions.has(id)) {
+    const loaded = loadSessionFromDisk(id);
+    if (loaded) {
+      sessions.set(id, loaded);
+      return id;
+    }
+    const state = clone(defaultState);
+    sessions.set(id, state);
+    saveSessionToDisk(id, state);
+  }
+  return id;
+}
+
+function sessionExists(sessionId) {
+  const id = normalizeSessionId(sessionId);
+  if (!id) return false;
+  if (sessions.has(id)) return true;
+  return fs.existsSync(sessionFilePath(id));
+}
+
+function saveState(sessionId) {
+  const state = getState(sessionId);
+  if (!state) return;
+  saveSessionToDisk(sessionId, state);
+}
+
+function createSession() {
+  ensureDataDirs();
+  let id = "";
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const candidate = generateSessionId();
+    if (!sessionExists(candidate)) {
+      id = candidate;
+      break;
+    }
+  }
+  if (!id) {
+    id = generateSessionId() + Date.now().toString(16).slice(-4);
+  }
+  ensureSession(id);
+  return {
+    id,
+    createdAt: Date.now()
+  };
+}
+
+function listSessions() {
+  ensureDataDirs();
+  migrateLegacySessionFile();
+  const ids = new Set();
+  if (fs.existsSync(sessionsDir)) {
+    fs.readdirSync(sessionsDir).forEach((name) => {
+      if (!name.endsWith(".json")) return;
+      const id = name.slice(0, -5);
+      if (normalizeSessionId(id)) ids.add(id);
+    });
+  }
+  sessions.forEach((_state, id) => {
+    if (normalizeSessionId(id)) ids.add(id);
+  });
+  return Array.from(ids)
+    .sort()
+    .map((id) => {
+      const state = getState(id) || clone(defaultState);
+      const teamCount = Object.keys(state.teams || {}).length;
+      const questionCount = (state.questions || []).length;
+      let updatedAt = 0;
+      try {
+        updatedAt = fs.statSync(sessionFilePath(id)).mtimeMs;
+      } catch (error) {
+        updatedAt = 0;
+      }
+      return {
+        id,
+        teamCount,
+        questionCount,
+        quizStarted: Boolean(state.quizStarted),
+        quizFinished: Boolean(state.quizFinished),
+        updatedAt
+      };
+    })
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+function deleteSession(sessionId) {
+  const id = normalizeSessionId(sessionId);
+  if (!id) return { error: "Invalid session id." };
+  sessions.delete(id);
+  const filePath = sessionFilePath(id);
+  if (fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (error) {
+      return { error: "Failed to delete session." };
+    }
+  }
+  return { ok: true, id };
 }
 
 function getPublicQuestion(question) {
@@ -108,21 +259,25 @@ function getPublicQuestion(question) {
   };
 }
 
-function getCurrentQuestion() {
+function getCurrentQuestion(state) {
   if (state.currentQuestionIndex < 0 || state.currentQuestionIndex >= state.questions.length) {
     return null;
   }
   return state.questions[state.currentQuestionIndex];
 }
 
-function getSessionForAdmin() {
+function getSessionForAdmin(sessionId) {
+  const state = getState(sessionId);
+  if (!state) return null;
   return {
     ...state,
-    currentQuestion: getCurrentQuestion()
+    currentQuestion: getCurrentQuestion(state)
   };
 }
 
-function getSessionForTeam(teamId) {
+function getSessionForTeam(sessionId, teamId) {
+  const state = getState(sessionId);
+  if (!state) return null;
   const team = state.teams[teamId] || null;
   const approved = Boolean(team && team.approved);
   const hasSubmittedCurrentQuestion =
@@ -138,63 +293,72 @@ function getSessionForTeam(teamId) {
     quizStarted: state.quizStarted,
     quizFinished: state.quizFinished,
     currentQuestionIndex: state.currentQuestionIndex,
-    currentQuestion: getPublicQuestion(getCurrentQuestion())
+    currentQuestion: getPublicQuestion(getCurrentQuestion(state))
   };
 }
 
-function setQuestions(questions) {
+function setQuestions(sessionId, questions) {
+  const state = getState(sessionId);
+  if (!state) return null;
   state.questions = (questions || []).map(normalizeQuestionShape);
   state.currentQuestionIndex = questions.length > 0 ? 0 : -1;
   state.quizStarted = false;
   state.quizFinished = false;
   state.answers = {};
   state.submissions = {};
-  saveState();
-  return getSessionForAdmin();
+  saveState(sessionId);
+  return getSessionForAdmin(sessionId);
 }
 
-function clearQuiz() {
-  state = clone(defaultState);
-  saveState();
-  return getSessionForAdmin();
+function clearQuiz(sessionId) {
+  const id = ensureSession(sessionId);
+  if (!id) return null;
+  const state = clone(defaultState);
+  sessions.set(id, state);
+  saveState(id);
+  return getSessionForAdmin(id);
 }
 
-function clearTeams() {
+function clearTeams(sessionId) {
+  const state = getState(sessionId);
+  if (!state) return null;
   state.teams = {};
   state.answers = {};
   state.submissions = {};
-  saveState();
-  return getSessionForAdmin();
+  saveState(sessionId);
+  return getSessionForAdmin(sessionId);
 }
 
-function startQuiz() {
-  if (state.questions.length === 0) {
-    return false;
-  }
+function startQuiz(sessionId) {
+  const state = getState(sessionId);
+  if (!state || state.questions.length === 0) return false;
   state.quizStarted = true;
   state.quizFinished = false;
   if (state.currentQuestionIndex < 0) {
     state.currentQuestionIndex = 0;
   }
-  saveState();
+  saveState(sessionId);
   return true;
 }
 
-function finishQuiz() {
+function finishQuiz(sessionId) {
+  const state = getState(sessionId);
+  if (!state) return;
   state.quizFinished = true;
   state.quizStarted = false;
-  saveState();
+  saveState(sessionId);
 }
 
-function setCurrentQuestionIndex(index) {
-  if (state.questions.length === 0) return false;
+function setCurrentQuestionIndex(sessionId, index) {
+  const state = getState(sessionId);
+  if (!state || state.questions.length === 0) return false;
   if (index < 0 || index >= state.questions.length) return false;
   state.currentQuestionIndex = index;
-  saveState();
+  saveState(sessionId);
   return true;
 }
 
-function resetTeamRecordsByName(teamName) {
+function resetTeamRecordsByName(state, teamName) {
   const normalized = String(teamName || "").trim().toLowerCase();
   if (!normalized) return 0;
   let removed = 0;
@@ -209,7 +373,9 @@ function resetTeamRecordsByName(teamName) {
   return removed;
 }
 
-function registerOrReconnectTeam({ teamId, teamName, resetExisting }) {
+function registerOrReconnectTeam(sessionId, { teamId, teamName, resetExisting }) {
+  const state = getState(sessionId);
+  if (!state) return { error: "Session not found." };
   let id = (teamId || "").trim();
   const name = (teamName || "").trim();
   if (!name) {
@@ -217,7 +383,7 @@ function registerOrReconnectTeam({ teamId, teamName, resetExisting }) {
   }
   let resetCount = 0;
   if (Boolean(resetExisting)) {
-    resetCount = resetTeamRecordsByName(name);
+    resetCount = resetTeamRecordsByName(state, name);
     id = "";
   }
   if (!id) {
@@ -243,33 +409,36 @@ function registerOrReconnectTeam({ teamId, teamName, resetExisting }) {
     state.submissions[id] = {};
   }
 
-  saveState();
+  saveState(sessionId);
   return { team: state.teams[id], approved: Boolean(state.teams[id].approved), resetCount };
 }
 
-function approveTeam(teamId) {
-  const team = state.teams[teamId];
+function approveTeam(sessionId, teamId) {
+  const state = getState(sessionId);
+  const team = state && state.teams[teamId];
   if (!team) return { error: "Team not found." };
   team.approved = true;
-  saveState();
+  saveState(sessionId);
   return { ok: true, team };
 }
 
-function kickTeam(teamId) {
-  const team = state.teams[teamId];
+function kickTeam(sessionId, teamId) {
+  const state = getState(sessionId);
+  const team = state && state.teams[teamId];
   if (!team) return { error: "Team not found." };
   delete state.teams[teamId];
   delete state.answers[teamId];
   delete state.submissions[teamId];
-  saveState();
+  saveState(sessionId);
   return { ok: true, team };
 }
 
-function setTeamAway(teamId, away) {
-  const team = state.teams[teamId];
+function setTeamAway(sessionId, teamId, away) {
+  const state = getState(sessionId);
+  const team = state && state.teams[teamId];
   if (!team) return { error: "Team not found." };
   team.away = Boolean(away);
-  saveState();
+  saveState(sessionId);
   return { ok: true, team };
 }
 
@@ -295,8 +464,21 @@ function compareAnswers(question, submittedAnswers) {
   return true;
 }
 
-function submitAnswer({ teamId, questionIndex, answers }) {
-  const team = state.teams[teamId];
+function recalculateScores(state) {
+  Object.keys(state.teams).forEach((teamId) => {
+    const byTeam = state.submissions[teamId] || {};
+    let score = 0;
+    Object.keys(byTeam).forEach((qIdx) => {
+      if (byTeam[qIdx].isCorrect) score += 1;
+    });
+    if (!state.answers[teamId]) state.answers[teamId] = {};
+    state.answers[teamId].score = score;
+  });
+}
+
+function submitAnswer(sessionId, { teamId, questionIndex, answers }) {
+  const state = getState(sessionId);
+  const team = state && state.teams[teamId];
   if (!team) return { error: "Team not found." };
   if (!team.approved) return { error: "Waiting for admin approval." };
   if (questionIndex !== state.currentQuestionIndex) return { error: "Question index mismatch." };
@@ -316,13 +498,14 @@ function submitAnswer({ teamId, questionIndex, answers }) {
     manualIsCorrect: null
   };
 
-  recalculateScores();
-  saveState();
+  recalculateScores(state);
+  saveState(sessionId);
   return { ok: true };
 }
 
-function editTeamAnswer({ teamId, questionIndex, answers, isCorrect }) {
-  const question = state.questions[questionIndex];
+function editTeamAnswer(sessionId, { teamId, questionIndex, answers, isCorrect }) {
+  const state = getState(sessionId);
+  const question = state && state.questions[questionIndex];
   if (!question) return { error: "Question not found." };
   if (!state.teams[teamId]) return { error: "Team not found." };
   if (!state.submissions[teamId]) state.submissions[teamId] = {};
@@ -339,31 +522,20 @@ function editTeamAnswer({ teamId, questionIndex, answers, isCorrect }) {
 
   state.submissions[teamId][questionIndex] = {
     answers: normalized,
-    // Keep original order stable in admin table after manual edits.
     updatedAt: existing && existing.updatedAt ? existing.updatedAt : Date.now(),
     isCorrect: manualIsCorrect === null ? autoIsCorrect : manualIsCorrect,
     manualIsCorrect,
     editedByAdmin: true
   };
 
-  recalculateScores();
-  saveState();
+  recalculateScores(state);
+  saveState(sessionId);
   return { ok: true };
 }
 
-function recalculateScores() {
-  Object.keys(state.teams).forEach((teamId) => {
-    const byTeam = state.submissions[teamId] || {};
-    let score = 0;
-    Object.keys(byTeam).forEach((qIdx) => {
-      if (byTeam[qIdx].isCorrect) score += 1;
-    });
-    if (!state.answers[teamId]) state.answers[teamId] = {};
-    state.answers[teamId].score = score;
-  });
-}
-
-function getLeaderboard() {
+function getLeaderboard(sessionId) {
+  const state = getState(sessionId);
+  if (!state) return [];
   return Object.values(state.teams)
     .filter((team) => Boolean(team.approved))
     .map((team) => ({
@@ -374,7 +546,9 @@ function getLeaderboard() {
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 }
 
-function getSubmissionsView() {
+function getSubmissionsView(sessionId) {
+  const state = getState(sessionId);
+  if (!state) return [];
   const rows = [];
   Object.keys(state.submissions).forEach((teamId) => {
     const teamName = state.teams[teamId]?.name || teamId;
@@ -396,17 +570,25 @@ function getSubmissionsView() {
   return rows;
 }
 
-loadState();
-Object.keys(state.teams).forEach((teamId) => {
-  if (typeof state.teams[teamId].away !== "boolean") {
-    state.teams[teamId].away = false;
-  }
-});
+migrateLegacySessionFile();
+ensureDataDirs();
+if (sessionExists("default")) {
+  getState("default");
+}
 
 module.exports = {
+  SESSION_ID_RE,
+  normalizeSessionId,
+  sessionExists,
+  createSession,
+  listSessions,
+  deleteSession,
   getState,
   getPublicQuestion,
-  getCurrentQuestion,
+  getCurrentQuestion: (sessionId) => {
+    const state = getState(sessionId);
+    return state ? getCurrentQuestion(state) : null;
+  },
   getSessionForAdmin,
   getSessionForTeam,
   setQuestions,

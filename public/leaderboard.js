@@ -1,4 +1,8 @@
-const socket = io("/leaderboard");
+const quizSessionId = QuizSession.getSessionIdFromPath();
+if (!quizSessionId) {
+  window.location.assign("/admin");
+}
+const socket = QuizSession.connectSocket("/leaderboard");
 const rowsEl = document.getElementById("rows");
 let latestRows = [];
 

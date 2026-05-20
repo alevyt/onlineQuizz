@@ -1,4 +1,15 @@
-const socket = io("/team");
+const quizSessionId = QuizSession.getSessionIdFromPath();
+if (!quizSessionId) {
+  window.location.assign("/admin");
+}
+const storedQuizSessionId = localStorage.getItem("quiz_session_id");
+if (storedQuizSessionId && storedQuizSessionId !== quizSessionId) {
+  localStorage.removeItem("quiz_team_id");
+  localStorage.removeItem("quiz_team_name");
+}
+localStorage.setItem("quiz_session_id", quizSessionId);
+
+const socket = QuizSession.connectSocket("/team");
 
 const registerCard = document.getElementById("registerCard");
 const quizCard = document.getElementById("quizCard");
@@ -103,7 +114,8 @@ function renderTimerStatus() {
 
 function redirectToResults() {
   if (!teamId) return;
-  window.location.href = "/results?teamId=" + encodeURIComponent(teamId);
+  window.location.href =
+    QuizSession.sessionPath("/results") + "?teamId=" + encodeURIComponent(teamId);
 }
 
 function renderMedia(question) {
@@ -433,7 +445,7 @@ window.I18N.init().then(() => {
 
   if (teamId && teamName) {
     reportVisibility();
-    fetch(`/api/session/team/${encodeURIComponent(teamId)}`)
+    fetch(QuizSession.apiBase() + "/team/" + encodeURIComponent(teamId))
       .then((r) => r.json())
       .then((session) => {
         if (session.team) {

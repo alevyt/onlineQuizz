@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" translate="no" class="notranslate">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Quiz Sessions</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; max-width: 900px; }
+      .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+      button, a.btn { padding: 8px 12px; text-decoration: none; color: #111; border: 1px solid #bbb; background: #f7f7f7; border-radius: 4px; display: inline-block; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; text-align: left; }
+      th { background: #f4f4f4; }
+      .muted { color: #555; font-size: 14px; }
+      .lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="lang-row">
+      <label for="langSelect" data-i18n="common.language">Language</label>
+      <select id="langSelect"></select>
+    </div>
+    <div class="row">
+      <h1 data-i18n="sessions.header" style="margin: 0;">Quiz Sessions</h1>
+      <button id="createSessionBtn" type="button" data-i18n="sessions.create">New session</button>
+      <button id="logoutBtn" type="button" data-i18n="sessions.logout">Log out</button>
+    </div>
+    <p class="muted" data-i18n="sessions.hint">Each session is an independent quiz. Share the team or leaderboard link for that session only.</p>
+    <div id="status" class="muted"></div>
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="sessions.id">Session</th>
+          <th data-i18n="sessions.questions">Questions</th>
+          <th data-i18n="sessions.teams">Teams</th>
+          <th data-i18n="sessions.status">Status</th>
+          <th data-i18n="common.action">Action</th>
+        </tr>
+      </thead>
+      <tbody id="sessionsBody"></tbody>
+    </table>
+    <script src="/i18n.js"></script>
+    <script src="/sessions.js"></script>
+  </body>
+</html>

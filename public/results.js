@@ -6,8 +6,16 @@
   var rowsEl = document.getElementById("rows");
   var latestPayload = null;
 
+  var quizSessionId = QuizSession.getSessionIdFromPath();
+  if (!quizSessionId) {
+    window.location.assign("/admin");
+    return;
+  }
   var params = new URLSearchParams(window.location.search);
   var teamId = params.get("teamId") || localStorage.getItem("quiz_team_id") || "";
+  if (localStorage.getItem("quiz_session_id") !== quizSessionId) {
+    teamId = params.get("teamId") || "";
+  }
 
   function setStatus(text) {
     if (statusEl) statusEl.textContent = text;
@@ -46,7 +54,7 @@
     return;
   }
 
-  fetch("/api/results/" + encodeURIComponent(teamId))
+  fetch(QuizSession.apiBase() + "/results/" + encodeURIComponent(teamId))
     .then(function (r) {
       return r.json();
     })
