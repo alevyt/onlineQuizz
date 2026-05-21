@@ -1,4 +1,9 @@
-const socket = io("/admin");
+const quizSessionId = QuizSession.getSessionIdFromPath();
+if (!quizSessionId) {
+  window.location.assign("/admin");
+}
+const socket = QuizSession.connectSocket("/admin");
+const sessionIdLabelEl = document.getElementById("sessionIdLabel");
 
 let session = null;
 let leaderboard = [];
@@ -27,6 +32,20 @@ const nextBtn = document.getElementById("nextBtn");
 const finishBtn = document.getElementById("finishBtn");
 const clearBtn = document.getElementById("clearBtn");
 const clearTeamsBtn = document.getElementById("clearTeamsBtn");
+const showQrBtn = document.getElementById("showQrBtn");
+const qrModal = document.getElementById("qrModal");
+const qrModalBackdrop = document.getElementById("qrModalBackdrop");
+const qrModalClose = document.getElementById("qrModalClose");
+const qrImage = document.getElementById("qrImage");
+const qrLinkEl = document.getElementById("qrLinkEl");
+
+const urlParams = new URLSearchParams(window.location.search);
+const qrTeamId = urlParams.get("teamId") || urlParams.get("tid") || "";
+let teamJoinLink = window.location.origin + QuizSession.sessionPath("/team");
+if (qrTeamId) {
+  teamJoinLink += "?teamId=" + encodeURIComponent(qrTeamId);
+}
+let qrCodeLoaded = false;
 
 function t(key, params, fallback) {
   return window.I18N ? window.I18N.t(key, params, fallback) : fallback || key;
@@ -35,6 +54,58 @@ function t(key, params, fallback) {
 function setStatus(text) {
   statusEl.textContent = text;
 }
+
+function renderQrModalTexts() {
+  if (!qrModal || !window.I18N) return;
+  window.I18N.applyToDocument(qrModal);
+  if (qrImage) qrImage.setAttribute("alt", t("qr.imageAlt"));
+  if (qrLinkEl && qrCodeLoaded) qrLinkEl.textContent = teamJoinLink;
+}
+
+function loadQrCode() {
+  if (!qrImage || qrCodeLoaded) return;
+  if (qrLinkEl) qrLinkEl.textContent = teamJoinLink;
+  fetch("/api/qr?text=" + encodeURIComponent(teamJoinLink), { credentials: "same-origin" })
+    .then((r) => r.json())
+    .then((data) => {
+      if (!data || !data.dataUrl) throw new Error("Missing QR payload");
+      qrImage.src = data.dataUrl;
+      qrImage.style.display = "block";
+      qrCodeLoaded = true;
+    })
+    .catch(() => {
+      qrImage.style.display = "none";
+      if (qrLinkEl) qrLinkEl.textContent = t("qr.failed", { link: teamJoinLink });
+      qrCodeLoaded = true;
+    });
+}
+
+function openQrModal() {
+  if (!qrModal) return;
+  qrModal.classList.add("open");
+  qrModal.setAttribute("aria-hidden", "false");
+  renderQrModalTexts();
+  loadQrCode();
+}
+
+function closeQrModal() {
+  if (!qrModal) return;
+  qrModal.classList.remove("open");
+  qrModal.setAttribute("aria-hidden", "true");
+  if (qrImage) qrImage.classList.remove("qr-fullscreen");
+}
+
+if (showQrBtn) showQrBtn.addEventListener("click", openQrModal);
+if (qrModalClose) qrModalClose.addEventListener("click", closeQrModal);
+if (qrModalBackdrop) qrModalBackdrop.addEventListener("click", closeQrModal);
+if (qrImage) {
+  qrImage.addEventListener("click", () => {
+    qrImage.classList.toggle("qr-fullscreen");
+  });
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && qrModal && qrModal.classList.contains("open")) closeQrModal();
+});
 
 function renderTimerStatus() {
   if (!timerState.active) {
@@ -239,7 +310,11 @@ uploadForm.addEventListener("submit", async (e) => {
   if (!file) return;
   const formData = new FormData();
   formData.append("quizFile", file);
-  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  const res = await fetch(QuizSession.apiBase() + "/upload", {
+    method: "POST",
+    body: formData,
+    credentials: "same-origin"
+  });
   const data = await res.json();
   if (!res.ok) {
     setStatus((data.errors || [data.error || t("admin.uploadFailed")]).join(" | "));
@@ -328,8 +403,13 @@ socket.on("timer:update", (payload) => {
 window.I18N.init().then(() => {
   window.I18N.bindLanguageSelector("langSelect", () => {
     renderAll();
+    renderQrModalTexts();
   });
-  fetch("/api/session/admin")
+  if (urlParams.get("qr") === "1") openQrModal();
+  if (sessionIdLabelEl) {
+    sessionIdLabelEl.textContent = t("admin.sessionId", { id: quizSessionId });
+  }
+  fetch(QuizSession.apiBase() + "/admin", { credentials: "same-origin" })
     .then(async (r) => {
       if (r.status === 401) {
         window.location.assign("/admin-login");

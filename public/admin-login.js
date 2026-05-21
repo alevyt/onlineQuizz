@@ -1,6 +1,8 @@
 const form = document.getElementById("loginForm");
 const passwordInput = document.getElementById("passwordInput");
 const statusEl = document.getElementById("status");
+const nextPath = new URLSearchParams(window.location.search).get("next") || "/admin";
+const safeNext = nextPath.startsWith("/admin") ? nextPath : "/admin";
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -20,5 +22,5 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
-  window.location.assign("/admin");
+  window.location.assign(safeNext);
 });

@@ -16,6 +16,7 @@ var parseCsvFile = require("../utils/parseCsv").parseCsvFile;
 var app = express();
 var server = http.createServer(app);
 var io = socketIo(server);
+var publicDir = path.join(__dirname, "..", "public");
 var ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "").trim();
 if (!ADMIN_PASSWORD) {
   ADMIN_PASSWORD = "admin";
@@ -53,7 +54,7 @@ clearUploadsDir();
 var upload = multer({ dest: uploadsDir });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..", "public")));
+app.use(express.static(publicDir));
 
 function parseCookies(req) {
   var header = req.headers.cookie || "";
@@ -80,18 +81,54 @@ function requireAdminAuth(req, res, next) {
   return res.status(401).json({ error: "Unauthorized" });
 }
 
-app.get("/admin", function (req, res) {
-  if (!isAdminAuthenticated(req)) {
-    return res.redirect("/admin-login");
-  }
-  res.sendFile(path.join(__dirname, "..", "public", "admin.html"));
-});
+function buildSessionUrls(req, sessionId) {
+  var base = req.protocol + "://" + req.get("host");
+  var prefix = base + "/s/" + encodeURIComponent(sessionId);
+  return {
+    id: sessionId,
+    admin: prefix + "/admin",
+    team: prefix + "/team",
+    leaderboard: prefix + "/leaderboard",
+    results: prefix + "/results"
+  };
+}
 
+function resolveSessionIdParam(req) {
+  return quiz.normalizeSessionId(req.params.sessionId);
+}
+
+function requireExistingSession(req, res, next) {
+  var sessionId = resolveSessionIdParam(req);
+  if (!sessionId || !quiz.sessionExists(sessionId)) {
+    return res.status(404).json({ error: "Session not found." });
+  }
+  req.quizSessionId = sessionId;
+  return next();
+}
+
+function sendPage(fileName) {
+  return function (req, res) {
+    res.sendFile(path.join(publicDir, fileName));
+  };
+}
+
+function requireAdminPage(req, res, next) {
+  if (!isAdminAuthenticated(req)) {
+    return res.redirect("/admin-login?next=" + encodeURIComponent(req.originalUrl || "/admin"));
+  }
+  return next();
+}
+
+app.get("/admin", requireAdminPage, sendPage("sessions.html"));
 app.get("/admin-login", function (req, res) {
   if (isAdminAuthenticated(req)) {
+    var nextPath = String(req.query.next || "").trim();
+    if (nextPath.indexOf("/admin") === 0 || nextPath.indexOf("/s/") === 0) {
+      return res.redirect(nextPath);
+    }
     return res.redirect("/admin");
   }
-  return res.sendFile(path.join(__dirname, "..", "public", "admin-login.html"));
+  return res.sendFile(path.join(publicDir, "admin-login.html"));
 });
 
 app.post("/api/admin/login", function (req, res) {
@@ -122,58 +159,87 @@ app.post("/api/admin/logout", function (req, res) {
   return res.json({ ok: true });
 });
 
-app.use(function (req, res, next) {
-  if (
-    req.path === "/admin" ||
-    req.path === "/admin-login" ||
-    req.path === "/team" ||
-    req.path === "/leaderboard" ||
-    req.path === "/qr" ||
-    req.path === "/results"
-  ) {
-    return next();
-  }
-  if (req.path.indexOf("/api/") === 0) return next();
-  if (req.path.indexOf("/socket.io/") === 0) return next();
-  if (path.extname(req.path)) return next();
-  return res.redirect("/team");
+app.get("/api/sessions", requireAdminAuth, function (req, res) {
+  res.json({ sessions: quiz.listSessions() });
 });
 
-app.get("/team", function (req, res) {
-  res.sendFile(path.join(__dirname, "..", "public", "team.html"));
-});
-
-app.get("/leaderboard", function (req, res) {
-  res.sendFile(path.join(__dirname, "..", "public", "leaderboard.html"));
-});
-
-app.get("/qr", function (req, res) {
-  res.sendFile(path.join(__dirname, "..", "public", "qr.html"));
-});
-
-app.get("/results", function (req, res) {
-  res.sendFile(path.join(__dirname, "..", "public", "results.html"));
-});
-
-app.get("/api/session/admin", function (req, res) {
-  if (!isAdminAuthenticated(req)) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  res.json({
-    session: quiz.getSessionForAdmin(),
-    leaderboard: quiz.getLeaderboard(),
-    submissions: quiz.getSubmissionsView()
+app.post("/api/sessions", requireAdminAuth, function (req, res) {
+  var created = quiz.createSession();
+  res.status(201).json({
+    session: created,
+    urls: buildSessionUrls(req, created.id)
   });
 });
 
-app.get("/api/session/team/:teamId", function (req, res) {
-  res.json(quiz.getSessionForTeam(req.params.teamId));
+app.delete("/api/sessions/:sessionId", requireAdminAuth, requireExistingSession, function (req, res) {
+  var result = quiz.deleteSession(req.quizSessionId);
+  if (result.error) {
+    return res.status(400).json({ error: result.error });
+  }
+  return res.json({ ok: true, id: result.id });
 });
 
-app.get("/api/results/:teamId", function (req, res) {
+app.get("/s/:sessionId/admin", requireAdminPage, requireExistingSession, sendPage("admin.html"));
+app.get("/s/:sessionId/team", requireExistingSession, sendPage("team.html"));
+app.get("/s/:sessionId/leaderboard", requireExistingSession, sendPage("leaderboard.html"));
+app.get("/s/:sessionId/results", requireExistingSession, sendPage("results.html"));
+
+app.get("/team", function (req, res) {
+  return res.redirect("/admin");
+});
+
+app.get("/leaderboard", function (req, res) {
+  return res.redirect("/admin");
+});
+
+app.get("/qr", function (req, res) {
+  var sessionId = quiz.normalizeSessionId(req.query.session || req.query.sessionId || "");
+  var teamId = req.query.teamId || req.query.tid;
+  if (!sessionId) {
+    return res.redirect("/admin");
+  }
+  var target = "/s/" + encodeURIComponent(sessionId) + "/admin?qr=1";
+  if (teamId) {
+    target += "&teamId=" + encodeURIComponent(String(teamId));
+  }
+  return res.redirect(target);
+});
+
+app.get("/results", function (req, res) {
+  var sessionId = quiz.normalizeSessionId(req.query.session || req.query.sessionId || "");
+  if (!sessionId) {
+    return res.redirect("/admin");
+  }
+  var target = "/s/" + encodeURIComponent(sessionId) + "/results";
+  var teamId = req.query.teamId || req.query.tid;
+  if (teamId) {
+    target += "?teamId=" + encodeURIComponent(String(teamId));
+  }
+  return res.redirect(target);
+});
+
+app.get("/api/sessions/:sessionId/admin", requireAdminAuth, requireExistingSession, function (req, res) {
+  var sessionId = req.quizSessionId;
+  res.json({
+    session: quiz.getSessionForAdmin(sessionId),
+    leaderboard: quiz.getLeaderboard(sessionId),
+    submissions: quiz.getSubmissionsView(sessionId)
+  });
+});
+
+app.get("/api/sessions/:sessionId/team/:teamId", requireExistingSession, function (req, res) {
+  var data = quiz.getSessionForTeam(req.quizSessionId, req.params.teamId);
+  if (!data) {
+    return res.status(404).json({ error: "Session not found." });
+  }
+  res.json(data);
+});
+
+app.get("/api/sessions/:sessionId/results/:teamId", requireExistingSession, function (req, res) {
+  var sessionId = req.quizSessionId;
   var teamId = req.params.teamId;
-  var session = quiz.getSessionForTeam(teamId);
-  var leaderboard = quiz.getLeaderboard();
+  var session = quiz.getSessionForTeam(sessionId, teamId);
+  var leaderboard = quiz.getLeaderboard(sessionId);
   var placement = null;
   for (var i = 0; i < leaderboard.length; i += 1) {
     if (leaderboard[i].id === teamId) {
@@ -190,7 +256,7 @@ app.get("/api/results/:teamId", function (req, res) {
   });
 });
 
-app.get("/api/qr", function (req, res) {
+app.get("/api/qr", requireAdminAuth, function (req, res) {
   var text = String(req.query.text || "").trim();
   if (!text) {
     return res.status(400).json({ error: "text query param is required." });
@@ -203,36 +269,62 @@ app.get("/api/qr", function (req, res) {
   });
 });
 
-app.post("/api/upload", requireAdminAuth, upload.single("quizFile"), function (req, res) {
-  if (!req.file) {
-    return res.status(400).json({ error: "quizFile is required." });
-  }
-  var originalName = (req.file.originalname || "").toLowerCase();
-  var ext = path.extname(originalName);
-  var isCsv = ext === ".csv" || originalName.indexOf(".csv") !== -1;
+app.post(
+  "/api/sessions/:sessionId/upload",
+  requireAdminAuth,
+  requireExistingSession,
+  upload.single("quizFile"),
+  function (req, res) {
+    if (!req.file) {
+      return res.status(400).json({ error: "quizFile is required." });
+    }
+    var sessionId = req.quizSessionId;
+    var originalName = (req.file.originalname || "").toLowerCase();
+    var ext = path.extname(originalName);
+    var isCsv = ext === ".csv" || originalName.indexOf(".csv") !== -1;
 
-  var parsed = isCsv ? parseCsvFile(req.file.path) : parseExcelFile(req.file.path);
-  try {
-    fs.unlinkSync(req.file.path);
-  } catch (error) {
-    // Ignore deletion errors for temp uploads.
-  }
-  var errors = parsed.errors;
-  var questions = parsed.questions;
-  if (errors.length) {
-    return res.status(400).json({ errors });
-  }
+    var parsed = isCsv ? parseCsvFile(req.file.path) : parseExcelFile(req.file.path);
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (error) {
+      // Ignore deletion errors for temp uploads.
+    }
+    var errors = parsed.errors;
+    var questions = parsed.questions;
+    if (errors.length) {
+      return res.status(400).json({ errors });
+    }
 
-  var session = quiz.setQuestions(questions);
-  io.of("/admin").emit("session:restored", {
-    session,
-    leaderboard: quiz.getLeaderboard(),
-    submissions: quiz.getSubmissionsView()
-  });
-  io.of("/team").emit("session:restored");
-  io.of("/leaderboard").emit("leaderboard:update", quiz.getLeaderboard());
+    var session = quiz.setQuestions(sessionId, questions);
+    var room = "session:" + sessionId;
+    io.of("/admin").to(room).emit("session:restored", {
+      session: session,
+      leaderboard: quiz.getLeaderboard(sessionId),
+      submissions: quiz.getSubmissionsView(sessionId)
+    });
+    io.of("/team").to(room).emit("session:restored");
+    io.of("/leaderboard").to(room).emit("leaderboard:update", quiz.getLeaderboard(sessionId));
 
-  return res.json({ ok: true, count: questions.length });
+    return res.json({ ok: true, count: questions.length });
+  }
+);
+
+app.use(function (req, res, next) {
+  if (
+    req.path === "/admin" ||
+    req.path === "/admin-login" ||
+    req.path === "/team" ||
+    req.path === "/leaderboard" ||
+    req.path === "/qr" ||
+    req.path === "/results"
+  ) {
+    return next();
+  }
+  if (req.path.indexOf("/s/") === 0) return next();
+  if (req.path.indexOf("/api/") === 0) return next();
+  if (req.path.indexOf("/socket.io/") === 0) return next();
+  if (path.extname(req.path)) return next();
+  return res.redirect("/admin");
 });
 
 attachSocketHandlers(io, function (cookieHeader) {
@@ -269,5 +361,5 @@ server.listen(PORT, "0.0.0.0", function () {
   var localIp = getLocalIPv4();
   console.log("Server running on: http://localhost:" + PORT);
   console.log("Network URL: http://" + localIp + ":" + PORT);
-  console.log("Team URL: http://" + localIp + ":" + PORT + "/team");
+  console.log("Admin sessions: http://" + localIp + ":" + PORT + "/admin");
 });

@@ -24,6 +24,16 @@
       .lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
       tr.team-away-row { background: #fff4e6; }
       td.team-away-cell { color: #b45309; font-weight: 600; }
+      .modal { display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+      .modal.open { display: flex; }
+      .modal-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); }
+      .modal-dialog { position: relative; background: #fff; border-radius: 10px; padding: 20px; max-width: 420px; width: 100%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
+      .modal-close { position: absolute; top: 8px; right: 10px; border: 0; background: transparent; font-size: 24px; line-height: 1; cursor: pointer; color: #555; }
+      #qrModal img { width: 256px; height: 256px; margin-top: 12px; border: 1px solid #ddd; cursor: zoom-in; object-fit: contain; background: #fff; display: block; }
+      #qrModal .qr-fullscreen {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; margin: 0; border: 0; z-index: 10001; cursor: zoom-out;
+      }
+      #qrModal code { word-break: break-word; font-size: 13px; }
     </style>
   </head>
   <body>
@@ -31,7 +41,12 @@
       <label for="langSelect" data-i18n="common.language">Language</label>
       <select id="langSelect"></select>
     </div>
-    <h1 data-i18n="admin.header">Admin</h1>
+    <div class="row" style="align-items: center;">
+      <h1 data-i18n="admin.header" style="margin: 0;">Admin</h1>
+      <a id="sessionsLink" href="/admin" class="muted" data-i18n="admin.allSessions">All sessions</a>
+      <span id="sessionIdLabel" class="muted"></span>
+      <button id="showQrBtn" type="button" data-i18n="admin.showQrCode">Team join QR</button>
+    </div>
 
     <div class="row">
       <form id="uploadForm">
@@ -103,7 +118,19 @@
       </table>
     </div>
 
+    <div id="qrModal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" id="qrModalBackdrop"></div>
+      <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+        <button type="button" class="modal-close" id="qrModalClose" aria-label="Close">&times;</button>
+        <h2 id="qrModalTitle" data-i18n="qr.header" style="margin-top: 0;">Join via QR</h2>
+        <p data-i18n="qr.prompt">Scan this QR code to open the Team page:</p>
+        <img id="qrImage" data-i18n-title="qr.imageAlt" alt="Team page QR code" />
+        <p style="margin-bottom: 0;"><span data-i18n="qr.linkLabel">Link:</span> <code id="qrLinkEl"></code></p>
+      </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/session.js"></script>
     <script src="/i18n.js"></script>
     <script src="/admin.js"></script>
   </body>
